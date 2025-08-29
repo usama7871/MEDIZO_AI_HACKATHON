@@ -7,6 +7,7 @@ import PatientInfoCard from '@/components/patient-info-card';
 import VitalsMonitor from '@/components/vitals-monitor';
 import InteractiveQA from '@/components/interactive-qa';
 import ScenarioControls from '@/components/scenario-controls';
+import type { User } from '@/components/user-switcher';
 
 const defaultPatient = {
   name: 'John Smith',
@@ -29,6 +30,7 @@ export type Patient = typeof defaultPatient;
 
 export default function Home() {
   const [patient, setPatient] = useState<Patient>(defaultPatient);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput) => {
     setPatient({
@@ -43,7 +45,7 @@ export default function Home() {
 
   return (
     <DashboardLayout
-      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} />}
+      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} />}
     >
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 bg-background">
         <header className="flex items-center justify-between">
