@@ -21,12 +21,22 @@ const generateNewDataPoint = (currentValue: number, fluctuation: number, min: nu
 };
 
 export default function VitalsMonitor() {
-  const [hrData, setHrData] = useState(generateInitialData(85, 4));
-  const [bpData, setBpData] = useState(generateInitialData(120, 8));
-  const [spo2Data, setSpo2Data] = useState(generateInitialData(96, 1));
-  const [respData, setRespData] = useState(generateInitialData(18, 2));
+  const [hrData, setHrData] = useState<{ time: string; value: number }[]>([]);
+  const [bpData, setBpData] = useState<{ time: string; value: number }[]>([]);
+  const [spo2Data, setSpo2Data] = useState<{ time: string; value: number }[]>([]);
+  const [respData, setRespData] = useState<{ time: string; value: number }[]>([]);
 
   useEffect(() => {
+    // Generate initial data on the client side to avoid hydration mismatch
+    setHrData(generateInitialData(85, 4));
+    setBpData(generateInitialData(120, 8));
+    setSpo2Data(generateInitialData(96, 1));
+    setRespData(generateInitialData(18, 2));
+  }, []);
+
+  useEffect(() => {
+    if (hrData.length === 0) return; // Don't start interval until data is initialized
+
     const interval = setInterval(() => {
       setHrData(prev => {
         const newValue = generateNewDataPoint(prev[prev.length - 1].value, 2, 60, 120);
@@ -47,7 +57,7 @@ export default function VitalsMonitor() {
     }, 1500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [hrData]);
 
   return (
     <Card>
