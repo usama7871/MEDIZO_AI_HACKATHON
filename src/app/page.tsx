@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import DashboardLayout from '@/components/dashboard-layout';
 import PatientInfoCard from '@/components/patient-info-card';
@@ -8,6 +9,8 @@ import VitalsMonitor from '@/components/vitals-monitor';
 import InteractiveQA from '@/components/interactive-qa';
 import ScenarioControls from '@/components/scenario-controls';
 import type { User } from '@/components/user-switcher';
+import { Button } from '@/components/ui/button';
+import { PlusCircle } from 'lucide-react';
 
 const defaultPatient = {
   name: 'John Smith',
@@ -31,6 +34,17 @@ export type Patient = typeof defaultPatient;
 export default function Home() {
   const [patient, setPatient] = useState<Patient>(defaultPatient);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+      router.push('/login');
+    } else {
+        setUserRole(storedUser.toLowerCase());
+    }
+  }, [router]);
 
   const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput) => {
     setPatient({
@@ -43,6 +57,10 @@ export default function Home() {
     });
   };
 
+  if (!userRole) {
+    return null; // or a loading spinner
+  }
+
   return (
     <DashboardLayout
       sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} />}
@@ -50,6 +68,12 @@ export default function Home() {
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 bg-background">
         <header className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-bold text-primary font-headline">Patient Simulation Dashboard</h1>
+            {userRole === 'admin' && (
+                <Button onClick={() => router.push('/add-patient')}>
+                    <PlusCircle className="mr-2" />
+                    Add Patient
+                </Button>
+            )}
         </header>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-3">
