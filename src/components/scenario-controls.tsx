@@ -37,10 +37,9 @@ type ScenarioControlsProps = {
     onScenarioGenerated: (scenario: GeneratePersonalizedScenarioOutput) => void;
     currentUser: User | null;
     onUserChange: (user: User | null) => void;
-    userRole: 'admin' | 'user';
 };
 
-export default function ScenarioControls({ onScenarioGenerated, currentUser, onUserChange, userRole }: ScenarioControlsProps) {
+export default function ScenarioControls({ onScenarioGenerated, currentUser, onUserChange }: ScenarioControlsProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isScenarioLoading, setScenarioLoading] = useState(false);
@@ -100,6 +99,8 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
         default: return null;
     }
   }
+  
+  const userRole = currentUser?.id === 'admin' ? 'admin' : 'user';
 
   return (
     <div className="flex flex-col h-full">
