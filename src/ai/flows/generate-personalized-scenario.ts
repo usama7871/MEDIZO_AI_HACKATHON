@@ -17,6 +17,7 @@ const GeneratePersonalizedScenarioInputSchema = z.object({
   specialty: z.string().describe('The medical specialty of the student.'),
   performanceData: z.string().describe('The past performance of the student in previous simulations, should include metrics such as time to diagnosis and interventions chosen'),
   datasetId: z.string().describe('The ID of the anonymized patient dataset to use for scenario generation.'),
+  medicalRecords: z.string().optional().describe('Additional context or medical records for the student, providing background on their experience or focus areas.'),
 });
 export type GeneratePersonalizedScenarioInput = z.infer<
   typeof GeneratePersonalizedScenarioInputSchema
@@ -73,6 +74,7 @@ const prompt = ai.definePrompt({
   Specialty: {{{specialty}}}
   Performance Data: {{{performanceData}}}
   Dataset ID: {{{datasetId}}}
+  Additional Context/Records: {{{medicalRecords}}}
 
   Based on this information, create a realistic and challenging patient scenario with specific learning objectives.
 

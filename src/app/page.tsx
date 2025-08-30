@@ -34,15 +34,12 @@ export type Patient = typeof defaultPatient;
 export default function Home() {
   const [patient, setPatient] = useState<Patient>(defaultPatient);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
       router.push('/login');
-    } else {
-        setUserRole(storedUser.toLowerCase());
     }
   }, [router]);
 
@@ -57,23 +54,20 @@ export default function Home() {
     });
   };
 
-  if (!userRole) {
-    return null; // or a loading spinner
+  const userRole = currentUser?.id === 'admin' ? 'admin' : 'user';
+
+  if (!currentUser) {
+    // Or a loading spinner, but the user switcher sets a default
+    return null; 
   }
 
   return (
     <DashboardLayout
-      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} />}
+      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} userRole={userRole}/>}
     >
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 bg-background">
         <header className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-bold text-primary font-headline">Patient Simulation Dashboard</h1>
-            {userRole === 'admin' && (
-                <Button onClick={() => router.push('/add-patient')}>
-                    <PlusCircle className="mr-2" />
-                    Add Patient
-                </Button>
-            )}
         </header>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-3">

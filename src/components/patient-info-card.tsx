@@ -8,7 +8,7 @@ type PatientInfoCardProps = {
 
 export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
   return (
-    <Card>
+    <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20">
       <CardHeader>
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
@@ -23,7 +23,7 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
-            <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
+            <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 border border-border/50">
                 <Stethoscope className="h-8 w-8 text-primary mt-1 flex-shrink-0" />
                 <div>
                     <h3 className="font-semibold">Primary Condition</h3>
@@ -32,7 +32,7 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
                     <p className="text-muted-foreground">{patient.history}</p>
                 </div>
             </div>
-            <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50">
+            <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 border border-border/50">
                 <Activity className="h-8 w-8 text-primary mt-1 flex-shrink-0" />
                 <div>
                     <h3 className="font-semibold">Comorbidities</h3>
@@ -40,7 +40,7 @@ export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
                 </div>
             </div>
         </div>
-        <div className="flex items-start gap-4">
+        <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 border border-border/50">
           <FileText className="h-8 w-8 text-primary mt-1 flex-shrink-0" />
           <div>
             <h3 className="font-semibold">Scenario Description</h3>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,14 +13,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { handleGenerateScenario, handleSimulateComorbidities } from '@/app/actions';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PlusCircle, BrainCircuit, HeartPulse, Baby } from 'lucide-react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import UserSwitcher, { type User } from './user-switcher';
+import { Separator } from './ui/separator';
 
 const scenarioSchema = z.object({
   studentId: z.string().min(1, 'Student ID is required'),
   specialty: z.string().min(1, 'Specialty is required'),
   performanceData: z.string().min(1, 'Performance data is required'),
+  medicalRecords: z.string().optional(),
 });
 
 const comorbiditySchema = z.object({
@@ -34,17 +37,19 @@ type ScenarioControlsProps = {
     onScenarioGenerated: (scenario: GeneratePersonalizedScenarioOutput) => void;
     currentUser: User | null;
     onUserChange: (user: User | null) => void;
+    userRole: 'admin' | 'user';
 };
 
-export default function ScenarioControls({ onScenarioGenerated, currentUser, onUserChange }: ScenarioControlsProps) {
+export default function ScenarioControls({ onScenarioGenerated, currentUser, onUserChange, userRole }: ScenarioControlsProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isScenarioLoading, setScenarioLoading] = useState(false);
   const [isComorbidityLoading, setComorbidityLoading] = useState(false);
   const [comorbidityResult, setComorbidityResult] = useState<{ present: boolean, reasoning: string } | null>(null);
 
   const scenarioForm = useForm<ScenarioFormValues>({
     resolver: zodResolver(scenarioSchema),
-    defaultValues: { studentId: 'student-001', specialty: 'Cardiology', performanceData: 'Slow diagnosis time on last MI case.' },
+    defaultValues: { studentId: '', specialty: '', performanceData: 'No significant issues on last simulation.', medicalRecords: '' },
   });
 
   const comorbidityForm = useForm<ComorbidityFormValues>({
@@ -56,6 +61,7 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
     if (currentUser) {
       scenarioForm.setValue('studentId', currentUser.id);
       scenarioForm.setValue('specialty', currentUser.specialty);
+      scenarioForm.setValue('medicalRecords', currentUser.medicalRecords);
     }
   }, [currentUser, scenarioForm]);
 
@@ -85,12 +91,33 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
       setComorbidityResult(null);
     }
   };
+  
+  const specialtyIcon = (specialty: string) => {
+    switch (specialty.toLowerCase()) {
+        case 'cardiology': return <HeartPulse className="h-4 w-4" />;
+        case 'neurology': return <BrainCircuit className="h-4 w-4" />;
+        case 'pediatrics': return <Baby className="h-4 w-4" />;
+        default: return null;
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
       <div className="p-2">
-        <UserSwitcher onUserChange={onUserChange}/>
+        <UserSwitcher onUserChange={onUserChange} currentUser={currentUser}/>
       </div>
+      <Separator className="my-2 bg-sidebar-border/50" />
+      {userRole === 'admin' && (
+        <>
+            <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                <Button variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent-foreground" onClick={() => router.push('/add-patient')}>
+                    <PlusCircle className="mr-2" />
+                    <span className="group-data-[collapsible=icon]:hidden">Add Patient</span>
+                </Button>
+            </div>
+            <Separator className="my-2 bg-sidebar-border/50" />
+        </>
+      )}
       <Tabs defaultValue="scenario" className="w-full px-2 group-data-[collapsible=icon]:px-0 flex-1">
         <TabsList className="grid w-full grid-cols-2 group-data-[collapsible=icon]:hidden">
           <TabsTrigger value="scenario">Scenario</TabsTrigger>
@@ -107,17 +134,26 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
             </CardHeader>
             <CardContent className="space-y-4 px-2">
               <form onSubmit={scenarioForm.handleSubmit(onScenarioSubmit)} className="space-y-4 group-data-[collapsible=icon]:hidden">
-                <div>
-                  <Label htmlFor="studentId">Student ID</Label>
-                  <Input id="studentId" {...scenarioForm.register('studentId')} readOnly />
+                <div className="p-2 rounded-md bg-muted/50 border border-border/50">
+                  <Label htmlFor="studentId">Current User</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-sm font-medium">{currentUser?.name}</p>
+                  </div>
                 </div>
-                <div>
+                 <div className="p-2 rounded-md bg-muted/50 border border-border/50">
                   <Label htmlFor="specialty">Specialty</Label>
-                  <Input id="specialty" {...scenarioForm.register('specialty')} readOnly />
+                  <div className="flex items-center gap-2 mt-1">
+                    {specialtyIcon(currentUser?.specialty || '')}
+                    <p className="text-sm font-medium">{currentUser?.specialty}</p>
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="performanceData">Performance Data</Label>
+                  <Label htmlFor="performanceData">Performance Notes</Label>
                   <Textarea id="performanceData" {...scenarioForm.register('performanceData')} />
+                </div>
+                 <div>
+                  <Label htmlFor="medicalRecords">Additional Context / Records</Label>
+                  <Textarea id="medicalRecords" {...scenarioForm.register('medicalRecords')} placeholder="Paste any relevant medical records or context here..." />
                 </div>
                 <Button type="submit" className="w-full" disabled={isScenarioLoading}>
                   {isScenarioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

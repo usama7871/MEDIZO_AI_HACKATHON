@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { handleAnalyzeQuestion } from '@/app/actions';
-import { Loader2, User, Bot } from 'lucide-react';
+import { Loader2, User, Bot, Send } from 'lucide-react';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -60,7 +60,7 @@ export default function InteractiveQA({ patientHistory, currentVitals }: Interac
   };
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20">
       <CardHeader>
         <CardTitle>Interactive Q&A</CardTitle>
         <CardDescription>Ask questions about the patient.</CardDescription>
@@ -71,24 +71,24 @@ export default function InteractiveQA({ patientHistory, currentVitals }: Interac
             {messages.map((message, index) => (
               <div key={index} className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
                 {message.role === 'assistant' && (
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground"><Bot size={20} /></AvatarFallback>
+                  <Avatar className="w-8 h-8 border-2 border-primary">
+                    <AvatarFallback className="bg-primary/20 text-primary"><Bot size={20} /></AvatarFallback>
                   </Avatar>
                 )}
-                <div className={`rounded-lg px-3 py-2 max-w-xs ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                <div className={`rounded-lg px-3 py-2 max-w-xs shadow-md ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                   <p className="text-sm">{message.content}</p>
                 </div>
                 {message.role === 'user' && (
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-accent text-accent-foreground"><User size={20}/></AvatarFallback>
+                  <Avatar className="w-8 h-8 border-2 border-accent">
+                    <AvatarFallback className="bg-accent/20 text-accent"><User size={20}/></AvatarFallback>
                   </Avatar>
                 )}
               </div>
             ))}
             {isLoading && (
               <div className="flex items-start gap-3">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground"><Bot size={20} /></AvatarFallback>
+                <Avatar className="w-8 h-8 border-2 border-primary">
+                  <AvatarFallback className="bg-primary/20 text-primary"><Bot size={20} /></AvatarFallback>
                 </Avatar>
                 <div className="rounded-lg px-3 py-2 bg-muted">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -104,7 +104,7 @@ export default function InteractiveQA({ patientHistory, currentVitals }: Interac
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your question..."
-            className="min-h-[40px] resize-none"
+            className="min-h-[40px] resize-none bg-background/80"
             onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -113,8 +113,8 @@ export default function InteractiveQA({ patientHistory, currentVitals }: Interac
             }}
             disabled={isLoading}
           />
-          <Button type="submit" disabled={isLoading || !input.trim()}>
-            Send
+          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+            <Send className="h-4 w-4" />
           </Button>
         </form>
       </CardFooter>
