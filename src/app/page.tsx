@@ -34,13 +34,6 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
-      router.push('/login');
-    }
-  }, [router]);
-
   const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput) => {
     setPatient({
       name: 'Simulated Patient',
