@@ -47,7 +47,15 @@ export default function Home() {
 
   if (!currentUser) {
     // Or a loading spinner, but the user switcher sets a default
-    return null; 
+    return (
+        <DashboardLayout
+            sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} />}
+        >
+            <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 bg-background">
+                {/* You can add a loading skeleton here if you want */}
+            </main>
+        </DashboardLayout>
+    );
   }
 
   return (
