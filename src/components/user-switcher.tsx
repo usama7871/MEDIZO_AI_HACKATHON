@@ -70,7 +70,7 @@ export default function UserSwitcher({ onUserChange, currentUser }: UserSwitcher
         >
           <div className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
-              <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+              {currentUser.avatar && <AvatarImage src={currentUser.avatar} alt={currentUser.name} />}
               <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="text-left group-data-[collapsible=icon]:hidden">
@@ -87,7 +87,7 @@ export default function UserSwitcher({ onUserChange, currentUser }: UserSwitcher
         {users.map((user) => (
           <DropdownMenuItem key={user.id} onClick={() => handleUserSelect(user)}>
             <Avatar className="mr-2 h-8 w-8">
-              <AvatarImage src={user.avatar} alt={user.name} />
+              {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
               <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="text-left">
