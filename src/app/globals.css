@@ -4,57 +4,21 @@
 
 @layer base {
   :root {
-    --background: 231 60% 94%;
-    --foreground: 231 48% 20%;
-    --card: 231 60% 99%;
-    --card-foreground: 231 48% 20%;
-    --popover: 231 60% 99%;
-    --popover-foreground: 231 48% 20%;
-    --primary: 231 48% 48%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 231 50% 88%;
-    --secondary-foreground: 231 48% 28%;
-    --muted: 231 50% 92%;
-    --muted-foreground: 231 30% 55%;
-    --accent: 261 39% 58%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 231 20% 85%;
-    --input: 231 20% 90%;
-    --ring: 231 48% 48%;
-    --chart-1: 0 84.2% 60.2%; /* Red for Heart Rate */
-    --chart-2: 210 100% 50%; /* Bright Blue for BP */
-    --chart-3: 180 80% 50%; /* Cyan for SpO2 */
-    --chart-4: 50 100% 50%; /* Yellow for Respiration */
-    --chart-5: 340 80% 60%;
-    --radius: 0.5rem;
-    --sidebar-background: 230 50% 98%;
-    --sidebar-foreground: 231 48% 20%;
-    --sidebar-primary: 231 48% 48%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 231 60% 92%;
-    --sidebar-accent-foreground: 231 48% 28%;
-    --sidebar-border: 231 20% 88%;
-    --sidebar-ring: 231 48% 48%;
-  }
-
-  .dark {
-    --background: 220 15% 10%; /* Darker, slightly blue-tinted background */
+    --background: 224 71% 4%;
     --foreground: 210 40% 98%;
-    --card: 220 15% 15%; /* Slightly lighter card background */
+    --card: 224 71% 10%;
     --card-foreground: 210 40% 98%;
-    --popover: 220 15% 15%;
+    --popover: 224 71% 4%;
     --popover-foreground: 210 40% 98%;
     --primary: 210 100% 50%; /* Bright Blue */
     --primary-foreground: 224 71% 14%;
-    --secondary: 215 28% 22%;
+    --secondary: 215 28% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 215 28% 22%;
+    --muted: 215 28% 17%;
     --muted-foreground: 216 12% 74%;
     --accent: 0 84.2% 60.2%; /* Red */
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
     --border: 215 28% 25%;
     --input: 215 28% 25%;
@@ -64,7 +28,44 @@
     --chart-3: 180 80% 50%; /* Cyan for SpO2 */
     --chart-4: 50 100% 50%; /* Yellow for Respiration */
     --chart-5: 340 80% 60%;
-    --sidebar-background: 220 15% 12%;
+    --radius: 0.5rem;
+    --sidebar-background: 224 71% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 224 71% 14%;
+    --sidebar-accent: 215 28% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 28% 20%;
+    --sidebar-ring: 210 40% 98%;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+    --card: 224 71% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 100% 50%; /* Bright Blue */
+    --primary-foreground: 224 71% 14%;
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 215 28% 17%;
+    --muted-foreground: 216 12% 74%;
+    --accent: 0 84.2% 60.2%; /* Red */
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 215 28% 25%;
+    --input: 215 28% 25%;
+    --ring: 210 100% 50%; /* Bright Blue */
+    --chart-1: 0 84.2% 60.2%; /* Red for Heart Rate */
+    --chart-2: 210 100% 50%; /* Bright Blue for BP */
+    --chart-3: 180 80% 50%; /* Cyan for SpO2 */
+    --chart-4: 50 100% 50%; /* Yellow for Respiration */
+    --chart-5: 340 80% 60%;
+    --radius: 0.5rem;
+    --sidebar-background: 224 71% 8%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 40% 98%;
     --sidebar-primary-foreground: 224 71% 14%;
@@ -81,5 +82,24 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  @keyframes background-pan {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animated-background-pan {
+    background-size: 200% 200%;
+    animation: background-pan 15s ease-in-out infinite;
   }
 }

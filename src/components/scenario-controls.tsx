@@ -73,7 +73,6 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
     const result = await handleGenerateScenario({ 
         ...data, 
         datasetId: 'public-patient-data-v1',
-        // Include uploaded record content if available
         medicalRecords: data.medicalRecords + (uploadedRecordContent ? `\n\n--- UPLOADED RECORD ---\n${uploadedRecordContent}` : '')
     });
     setScenarioLoading(false);
@@ -157,7 +156,7 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
       {userRole === 'admin' && (
         <>
             <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                <Button variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent-foreground" onClick={() => router.push('/add-patient')}>
+                <Button variant="outline" className="w-full border-primary/50 text-primary/80 hover:bg-primary/10 hover:text-primary" onClick={() => router.push('/add-patient')}>
                     <PlusCircle className="mr-2" />
                     <span className="group-data-[collapsible=icon]:hidden">Add Patient</span>
                 </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import DashboardLayout from '@/components/dashboard-layout';
 import PatientInfoCard from '@/components/patient-info-card';
@@ -8,6 +8,7 @@ import VitalsMonitor from '@/components/vitals-monitor';
 import InteractiveQA from '@/components/interactive-qa';
 import ScenarioControls from '@/components/scenario-controls';
 import type { User } from '@/components/user-switcher';
+import { useRouter } from 'next/navigation';
 
 const defaultPatient = {
   name: 'John Smith',
@@ -31,6 +32,8 @@ export type Patient = typeof defaultPatient;
 export default function Home() {
   const [patient, setPatient] = useState<Patient>(defaultPatient);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const router = useRouter();
+
 
   const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput) => {
     setPatient({
@@ -47,19 +50,19 @@ export default function Home() {
     <DashboardLayout
       sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} />}
     >
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 bg-background">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
         <header className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-bold text-primary font-headline">Patient Simulation Dashboard</h1>
         </header>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-3">
-             {currentUser && <PatientInfoCard patient={patient} doctor={currentUser} />}
+             {currentUser ? <PatientInfoCard patient={patient} doctor={currentUser} /> : null}
           </div>
           <div className="xl:col-span-2">
             <VitalsMonitor />
           </div>
           <div className="xl:col-span-1">
-             {currentUser && <InteractiveQA patientHistory={patient.history} currentVitals="Heart Rate: 95 bpm, Blood Pressure: 140/90 mmHg, SpO2: 94%, Respiration Rate: 22/min" />}
+             {currentUser ? <InteractiveQA patientHistory={patient.history} currentVitals="Heart Rate: 95 bpm, Blood Pressure: 140/90 mmHg, SpO2: 94%, Respiration Rate: 22/min" /> : null}
           </div>
         </div>
       </main>

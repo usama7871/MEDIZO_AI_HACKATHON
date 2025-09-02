@@ -53,7 +53,7 @@ export default function AddPatientPage() {
     <DashboardLayout
         sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} currentUser={currentUser} onUserChange={setCurrentUser} />}
     >
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 bg-background">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
             <header className="flex items-center justify-between">
                 <h1 className="text-2xl md:text-3xl font-bold text-primary font-headline">Add New Patient</h1>
             </header>

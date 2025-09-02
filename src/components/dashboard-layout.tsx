@@ -21,8 +21,11 @@ type DashboardLayoutProps = {
 export default function DashboardLayout({ children, sidebarContent }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full bg-background text-foreground flex">
-        <Sidebar collapsible="icon" className="group-data-[collapsible=icon]:-translate-x-0 !w-64 group-data-[collapsible=icon]:!w-14 transition-all duration-300 ease-in-out">
+      <div className="min-h-screen w-full bg-background text-foreground flex relative">
+         <div className="absolute inset-0 z-0 bg-grid-pattern opacity-5" />
+         <div className="absolute inset-0 z-0 animated-background-pan bg-gradient-to-c from-primary/5 via-transparent to-accent/5" />
+        
+        <Sidebar collapsible="icon" className="group-data-[collapsible=icon]:-translate-x-0 !w-64 group-data-[collapsible=icon]:!w-14 transition-all duration-300 ease-in-out z-20">
           <SidebarHeader className="flex items-center justify-between p-4">
             <div className="flex items-center gap-2">
               <SimuPatientLogo />
@@ -40,7 +43,7 @@ export default function DashboardLayout({ children, sidebarContent }: DashboardL
           </SidebarFooter>
         </Sidebar>
 
-        <div className="flex flex-col w-full">
+        <div className="flex flex-col w-full z-10">
            <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-6 backdrop-blur-sm">
             <SidebarTrigger className="flex-shrink-0" />
             <h2 className="text-xl font-semibold text-foreground/80 font-headline hidden md:block">
