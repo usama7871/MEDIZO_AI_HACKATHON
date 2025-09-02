@@ -1,22 +1,24 @@
 import type { Patient } from "@/app/page";
+import type { User } from "@/components/user-switcher";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { User, Calendar, Stethoscope, FileText, Activity } from "lucide-react";
+import { User as UserIcon, Calendar, Stethoscope, FileText, Activity } from "lucide-react";
 
 type PatientInfoCardProps = {
   patient: Patient;
+  doctor: User;
 };
 
-export default function PatientInfoCard({ patient }: PatientInfoCardProps) {
+export default function PatientInfoCard({ patient, doctor }: PatientInfoCardProps) {
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20">
       <CardHeader>
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
             <CardTitle className="text-2xl font-headline text-primary">{patient.name}</CardTitle>
-            <CardDescription>Patient Details & Current Scenario</CardDescription>
+            <CardDescription>Patient Details & Current Scenario | Attending: Dr. {doctor.name} ({doctor.specialty})</CardDescription>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2"><User size={16} className="text-accent" /><span>{patient.gender}</span></div>
+            <div className="flex items-center gap-2"><UserIcon size={16} className="text-accent" /><span>{patient.gender}</span></div>
             <div className="flex items-center gap-2"><Calendar size={16} className="text-accent" /><span>{patient.age} years</span></div>
           </div>
         </div>

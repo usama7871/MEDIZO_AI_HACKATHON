@@ -24,7 +24,7 @@ export type User = {
 };
 
 const users: User[] = [
-  { id: 'admin', name: 'Admin', email: 'admin@simupatient.com', avatar: '', specialty: 'System Administration' },
+  { id: 'admin', name: 'Admin', email: 'admin@simupatient.com', avatar: '', specialty: 'System Administration', medicalRecords: 'System administrator with full access.' },
   { id: 'user-001', name: 'Dr. Evelyn Reed', email: 'e.reed@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', specialty: 'Cardiology', medicalRecords: 'Specializes in interventional cardiology. Research focus on acute coronary syndromes.' },
   { id: 'user-002', name: 'Dr. Kenji Tanaka', email: 'k.tanaka@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d', specialty: 'Neurology', medicalRecords: 'Focus on stroke and neurocritical care. Published papers on ischemic stroke management.' },
   { id: 'user-003', name: 'Dr. Aisha Khan', email: 'a.khan@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026706d', specialty: 'Pediatrics', medicalRecords: 'Pediatric emergency medicine fellow. Interested in sepsis and respiratory distress in children.' },
@@ -39,7 +39,7 @@ export default function UserSwitcher({ onUserChange, currentUser }: UserSwitcher
   const router = useRouter();
 
   useEffect(() => {
-    // Set initial user on mount
+    // Set initial user on mount if not already set
     if (!currentUser) {
         const initialUser = users[1]; // Default to Dr. Reed
         onUserChange(initialUser);
@@ -49,11 +49,11 @@ export default function UserSwitcher({ onUserChange, currentUser }: UserSwitcher
 
   const handleUserSelect = (user: User) => {
     onUserChange(user);
-    // In a real app, you might update a global state or make an API call
   };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
+    onUserChange(null);
     router.push('/login');
   };
 

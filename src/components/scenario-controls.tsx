@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,8 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { handleGenerateScenario, handleSimulateComorbidities } from '@/app/actions';
-import { Loader2, PlusCircle, BrainCircuit, HeartPulse, Baby } from 'lucide-react';
+import { handleGenerateScenario, handleSimulateComorbidities, handleFileUpload } from '@/app/actions';
+import { Loader2, PlusCircle, BrainCircuit, HeartPulse, Baby, Upload } from 'lucide-react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import UserSwitcher, { type User } from './user-switcher';
 import { Separator } from './ui/separator';
@@ -44,7 +44,10 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
   const router = useRouter();
   const [isScenarioLoading, setScenarioLoading] = useState(false);
   const [isComorbidityLoading, setComorbidityLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [comorbidityResult, setComorbidityResult] = useState<{ present: boolean, reasoning: string } | null>(null);
+  const [uploadedRecordContent, setUploadedRecordContent] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scenarioForm = useForm<ScenarioFormValues>({
     resolver: zodResolver(scenarioSchema),
@@ -67,7 +70,12 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
 
   const onScenarioSubmit: SubmitHandler<ScenarioFormValues> = async (data) => {
     setScenarioLoading(true);
-    const result = await handleGenerateScenario({ ...data, datasetId: 'public-patient-data-v1' });
+    const result = await handleGenerateScenario({ 
+        ...data, 
+        datasetId: 'public-patient-data-v1',
+        // Include uploaded record content if available
+        medicalRecords: data.medicalRecords + (uploadedRecordContent ? `\n\n--- UPLOADED RECORD ---\n${uploadedRecordContent}` : '')
+    });
     setScenarioLoading(false);
 
     if (result.success && result.data) {
@@ -77,6 +85,31 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
       toast({ variant: 'destructive', title: 'Error', description: result.error });
     }
   };
+  
+  const handleFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const result = await handleFileUpload(formData);
+    setIsUploading(false);
+
+    if (result.success && result.data) {
+      toast({ title: 'File Uploaded', description: `${file.name} has been processed.` });
+      setUploadedRecordContent(result.data.recordContent);
+    } else {
+      toast({ variant: 'destructive', title: 'Upload Failed', description: result.error });
+      setUploadedRecordContent(null);
+    }
+  };
+
 
   const onComorbiditySubmit: SubmitHandler<ComorbidityFormValues> = async (data) => {
     setComorbidityLoading(true);
@@ -107,6 +140,19 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
       <div className="p-2">
         <UserSwitcher onUserChange={onUserChange} currentUser={currentUser}/>
       </div>
+      <Separator className="my-2 bg-sidebar-border/50" />
+       <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.md" />
+        <Button variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent-foreground" onClick={handleFileSelect} disabled={isUploading}>
+          {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
+          <span className="group-data-[collapsible=icon]:hidden">Upload Report</span>
+        </Button>
+      </div>
+      {uploadedRecordContent && (
+          <div className="p-2 group-data-[collapsible=icon]:hidden">
+              <p className="text-xs text-muted-foreground truncate">Loaded: {fileInputRef.current?.files?.[0]?.name}</p>
+          </div>
+      )}
       <Separator className="my-2 bg-sidebar-border/50" />
       {userRole === 'admin' && (
         <>
