@@ -6,33 +6,13 @@
  *
  * It includes:
  * - `diagnosePatient`: The main async function that orchestrates the diagnostic process.
- * - `PatientDiagnosisInput`: The input type for the diagnosePatient function.
- * - `PatientDiagnosisOutput`: The output type for the diagnosePatient function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import type { PatientDiagnosisInput, PatientDiagnosisOutput } from '@/ai/schemas/patient-diagnosis';
+import { PatientDiagnosisInputSchema, PatientDiagnosisOutputSchema } from '@/ai/schemas/patient-diagnosis';
 
-// Input and Output Schemas
-export const PatientDiagnosisInputSchema = z.object({
-  scenarioDescription: z.string().describe('The full patient scenario description.'),
-  learningObjectives: z.array(z.string()).describe('Learning objectives for the simulation.'),
-  comorbidities: z.string().optional().describe('Patient\'s comorbidities.'),
-  uploadedMedicalRecords: z.string().optional().describe('Content of any uploaded medical records.'),
-  doctor: z.object({
-    name: z.string().describe('The name of the attending doctor.'),
-    specialty: z.string().describe('The specialty of the attending doctor.'),
-  }).describe('The doctor handling the case.'),
-});
-export type PatientDiagnosisInput = z.infer<typeof PatientDiagnosisInputSchema>;
-
-export const PatientDiagnosisOutputSchema = z.object({
-  initialAssessment: z.string().describe('The initial assessment of the patient.'),
-  recommendedAction: z.string().describe('The recommended immediate action or consultation.'),
-  specialistConsult: z.string().optional().describe('The specialty to consult (e.g., Cardiology, Neurology).'),
-  specialistReport: z.string().optional().describe('The detailed report from the specialist consultation.'),
-});
-export type PatientDiagnosisOutput = z.infer<typeof PatientDiagnosisOutputSchema>;
 
 // Specialist Prompts (Agents)
 const createSpecialistPrompt = (specialty: string) => ai.definePrompt({
@@ -95,9 +75,16 @@ const diagnosePatientFlow = ai.defineFlow(
     const initialOutput = masterResponse.output!;
 
     let specialistReport = 'No specialist consulted.';
+    let specialistToConsult = initialOutput.specialistConsult;
+
+    // If the master agent doesn't recommend a specific specialist, default to the attending doctor's specialty or General Medicine.
+    if (!specialistToConsult) {
+      specialistToConsult = input.doctor.specialty || 'General Medicine';
+    }
+
 
     // 2. Based on the master agent's decision, call the appropriate specialist agent.
-    switch (initialOutput.specialistConsult?.toLowerCase()) {
+    switch (specialistToConsult?.toLowerCase()) {
       case 'cardiology':
         const cardioResponse = await cardiologyPrompt(input);
         specialistReport = cardioResponse.output!.report;
@@ -120,6 +107,7 @@ const diagnosePatientFlow = ai.defineFlow(
     // 3. Combine the initial assessment with the specialist's report for the final output.
     return {
       ...initialOutput,
+      specialistConsult: specialistToConsult,
       specialistReport,
     };
   }

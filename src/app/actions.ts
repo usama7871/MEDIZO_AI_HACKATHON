@@ -3,7 +3,8 @@
 import { analyzeStudentQuestion, AnalyzeStudentQuestionInput } from '@/ai/flows/analyze-student-question';
 import { generatePersonalizedScenario, GeneratePersonalizedScenarioInput } from '@/ai/flows/generate-personalized-scenario';
 import { simulateComorbidities, SimulateComorbiditiesInput } from '@/ai/flows/simulate-comorbidities';
-import { diagnosePatient, PatientDiagnosisInput } from '@/ai/flows/patient-diagnosis-flow';
+import { diagnosePatient } from '@/ai/flows/patient-diagnosis-flow';
+import type { PatientDiagnosisInput } from '@/ai/schemas/patient-diagnosis';
 import { savePatientRecord } from '@/services/patient-record';
 
 export async function handleAnalyzeQuestion(input: AnalyzeStudentQuestionInput) {
