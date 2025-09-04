@@ -11,6 +11,7 @@ import ScenarioControls from '@/components/scenario-controls';
 import type { User } from '@/components/user-switcher';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 
 const defaultPatient = {
   name: 'John Smith',
@@ -39,7 +40,13 @@ export default function Home() {
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
-      setCurrentUser(JSON.parse(userStr));
+      try {
+        setCurrentUser(JSON.parse(userStr));
+      } catch (e) {
+        console.error("Failed to parse user from localStorage", e);
+        localStorage.removeItem('user');
+        router.push('/login');
+      }
     } else {
       router.push('/login');
     }
