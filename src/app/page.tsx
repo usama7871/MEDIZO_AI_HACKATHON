@@ -41,7 +41,8 @@ export default function Home() {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       try {
-        setCurrentUser(JSON.parse(userStr));
+        const user = JSON.parse(userStr);
+        setCurrentUser(user);
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
         localStorage.removeItem('user');
