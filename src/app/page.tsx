@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import DashboardLayout from '@/components/dashboard-layout';
 import PatientInfoCard from '@/components/patient-info-card';
@@ -9,6 +10,7 @@ import InteractiveQA from '@/components/interactive-qa';
 import ScenarioControls from '@/components/scenario-controls';
 import type { User } from '@/components/user-switcher';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 const defaultPatient = {
   name: 'John Smith',
@@ -30,39 +32,72 @@ const defaultPatient = {
 export type Patient = typeof defaultPatient;
 
 export default function Home() {
-  const [patient, setPatient] = useState<Patient>(defaultPatient);
+  const [patient, setPatient] = useState<Patient | null>(defaultPatient);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const router = useRouter();
 
-  const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput) => {
-    setPatient({
-      name: 'Simulated Patient',
-      age: Math.floor(Math.random() * 40) + 40,
-      gender: Math.random() > 0.5 ? 'Male' : 'Female',
-      primaryCondition: 'Personalized Scenario',
-      history: newScenario.comorbidities || 'Not specified.',
-      scenario: newScenario,
-    });
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setCurrentUser(JSON.parse(userStr));
+    } else {
+      router.push('/login');
+    }
+  }, [router]);
+
+  const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput | null) => {
+    if (newScenario) {
+      setPatient({
+        name: 'Simulated Patient',
+        age: Math.floor(Math.random() * 40) + 40,
+        gender: Math.random() > 0.5 ? 'Male' : 'Female',
+        primaryCondition: 'Personalized Scenario',
+        history: newScenario.comorbidities || 'Not specified.',
+        scenario: newScenario,
+      });
+    } else {
+      setPatient(null);
+    }
   };
+  
+  if (!currentUser) {
+      return (
+          <div className="flex h-screen w-full items-center justify-center bg-background">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+      )
+  }
 
   return (
     <DashboardLayout
-      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} patientScenario={patient.scenario} />}
+      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} patientScenario={patient?.scenario ?? null} />}
     >
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
         <header className="flex items-center justify-between">
             <h1 className="text-2xl md:text-3xl font-bold text-primary font-headline">Patient Simulation Dashboard</h1>
         </header>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-3">
-             {currentUser ? <PatientInfoCard patient={patient} doctor={currentUser} /> : null}
+        {patient && currentUser.role !== 'patient' ? (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-3">
+              <PatientInfoCard patient={patient} doctor={currentUser} />
+            </div>
+            <div className="xl:col-span-2">
+              <VitalsMonitor />
+            </div>
+            <div className="xl:col-span-1">
+              <InteractiveQA patientHistory={patient.history} currentVitals="Heart Rate: 95 bpm, Blood Pressure: 140/90 mmHg, SpO2: 94%, Respiration Rate: 22/min" />
+            </div>
           </div>
-          <div className="xl:col-span-2">
-            <VitalsMonitor />
-          </div>
-          <div className="xl:col-span-1">
-             {currentUser ? <InteractiveQA patientHistory={patient.history} currentVitals="Heart Rate: 95 bpm, Blood Pressure: 140/90 mmHg, SpO2: 94%, Respiration Rate: 22/min" /> : null}
-          </div>
-        </div>
+        ) : (
+          <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
+            <CardTitle className="text-2xl font-headline">
+                {currentUser.role === 'patient' ? `Welcome, ${currentUser.name}`: "No Patient Scenario Loaded"}
+            </CardTitle>
+            <CardDescription className="mt-2">
+                {currentUser.role === 'patient' ? "Your records are being reviewed by our team." : "Please use the sidebar to generate a new scenario."}
+            </CardDescription>
+          </Card>
+        )}
       </main>
     </DashboardLayout>
   );

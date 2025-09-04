@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { handleGenerateScenario, handleSimulateComorbidities, handleFileUpload } from '@/app/actions';
-import { Loader2, PlusCircle, BrainCircuit, HeartPulse, Baby, Upload } from 'lucide-react';
+import { Loader2, PlusCircle, BrainCircuit, HeartPulse, Baby, Upload, UserPlus } from 'lucide-react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import UserSwitcher, { type User } from './user-switcher';
 import { Separator } from './ui/separator';
@@ -34,10 +35,10 @@ type ScenarioFormValues = z.infer<typeof scenarioSchema>;
 type ComorbidityFormValues = z.infer<typeof comorbiditySchema>;
 
 type ScenarioControlsProps = {
-    onScenarioGenerated: (scenario: GeneratePersonalizedScenarioOutput) => void;
+    onScenarioGenerated: (scenario: GeneratePersonalizedScenarioOutput | null) => void;
     currentUser: User | null;
     onUserChange: (user: User | null) => void;
-    patientScenario: GeneratePersonalizedScenarioOutput; // Added for context
+    patientScenario: GeneratePersonalizedScenarioOutput | null;
 };
 
 export default function ScenarioControls({ onScenarioGenerated, currentUser, onUserChange, patientScenario }: ScenarioControlsProps) {
@@ -139,8 +140,8 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
         default: return null;
     }
   }
-  
-  const userRole = currentUser?.id === 'admin' ? 'admin' : 'user';
+
+  if (!currentUser) return null;
 
   return (
     <div className="flex flex-col h-full">
@@ -148,20 +149,38 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
         <UserSwitcher onUserChange={onUserChange} currentUser={currentUser}/>
       </div>
       <Separator className="my-2 bg-sidebar-border/50" />
-       <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.md" />
-        <Button variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent-foreground" onClick={handleFileSelect} disabled={isUploading || !currentUser}>
-          {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
-          <span className="group-data-[collapsible=icon]:hidden">Upload Report</span>
-        </Button>
-      </div>
-      {uploadedRecordContent && (
-          <div className="p-2 group-data-[collapsible=icon]:hidden">
-              <p className="text-xs text-muted-foreground truncate">Loaded: {fileInputRef.current?.files?.[0]?.name}</p>
-          </div>
+       
+       {currentUser.role !== 'patient' && (
+         <>
+            <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.md" />
+                <Button variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent-foreground" onClick={handleFileSelect} disabled={isUploading}>
+                {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
+                <span className="group-data-[collapsible=icon]:hidden">Upload Report</span>
+                </Button>
+            </div>
+            {uploadedRecordContent && (
+                <div className="p-2 group-data-[collapsible=icon]:hidden">
+                    <p className="text-xs text-muted-foreground truncate">Loaded: {fileInputRef.current?.files?.[0]?.name}</p>
+                </div>
+            )}
+            <Separator className="my-2 bg-sidebar-border/50" />
+         </>
+       )}
+      
+      {currentUser.role === 'admin' && (
+        <>
+            <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                <Button variant="outline" className="w-full border-primary/50 text-primary/80 hover:bg-primary/10 hover:text-primary" onClick={() => router.push('/add-doctor')}>
+                    <UserPlus className="mr-2" />
+                    <span className="group-data-[collapsible=icon]:hidden">Add Doctor</span>
+                </Button>
+            </div>
+            <Separator className="my-2 bg-sidebar-border/50" />
+        </>
       )}
-      <Separator className="my-2 bg-sidebar-border/50" />
-      {userRole === 'admin' && (
+
+      { (currentUser.role === 'admin' || currentUser.role === 'doctor') && (
         <>
             <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                 <Button variant="outline" className="w-full border-primary/50 text-primary/80 hover:bg-primary/10 hover:text-primary" onClick={() => router.push('/add-patient')}>
@@ -172,85 +191,88 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
             <Separator className="my-2 bg-sidebar-border/50" />
         </>
       )}
-      <Tabs defaultValue="scenario" className="w-full px-2 group-data-[collapsible=icon]:px-0 flex-1">
-        <TabsList className="grid w-full grid-cols-2 group-data-[collapsible=icon]:hidden">
-          <TabsTrigger value="scenario">Scenario</TabsTrigger>
-          <TabsTrigger value="comorbidity">Comorbidity</TabsTrigger>
-        </TabsList>
-         <div className="w-full text-center p-2 group-data-[collapsible=icon]:block hidden">
-              <p className="text-xs text-muted-foreground">CONTROLS</p>
-         </div>
-        <TabsContent value="scenario">
-          <Card className="border-none shadow-none bg-transparent">
-            <CardHeader className="px-2 group-data-[collapsible=icon]:hidden">
-              <CardTitle>Generate Scenario</CardTitle>
-              <CardDescription>Create a personalized case.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 px-2">
-              <form onSubmit={scenarioForm.handleSubmit(onScenarioSubmit)} className="space-y-4 group-data-[collapsible=icon]:hidden">
-                <div className="p-2 rounded-md bg-muted/50 border border-border/50">
-                  <Label htmlFor="studentId">Current User</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <p className="text-sm font-medium">{currentUser?.name}</p>
-                  </div>
-                </div>
-                 <div className="p-2 rounded-md bg-muted/50 border border-border/50">
-                  <Label htmlFor="specialty">Specialty</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    {specialtyIcon(currentUser?.specialty || '')}
-                    <p className="text-sm font-medium">{currentUser?.specialty}</p>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="performanceData">Performance Notes</Label>
-                  <Textarea id="performanceData" {...scenarioForm.register('performanceData')} disabled={!currentUser} />
-                </div>
-                <Button type="submit" className="w-full" disabled={isScenarioLoading || !currentUser}>
-                  {isScenarioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Generate
-                </Button>
-              </form>
-               <Button onClick={() => scenarioForm.handleSubmit(onScenarioSubmit)()} className="w-full group-data-[collapsible=icon]:block hidden" size="icon" disabled={isScenarioLoading || !currentUser}>
-                  {isScenarioLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "G"}
-               </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="comorbidity">
-          <Card className="border-none shadow-none bg-transparent">
-            <CardHeader className="px-2 group-data-[collapsible=icon]:hidden">
-              <CardTitle>Simulate Comorbidities</CardTitle>
-              <CardDescription>Check for related conditions.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 px-2">
-              <form onSubmit={comorbidityForm.handleSubmit(onComorbiditySubmit)} className="space-y-4 group-data-[collapsible=icon]:hidden">
-                <div>
-                  <Label htmlFor="primaryCondition">Primary Condition</Label>
-                  <Input id="primaryCondition" {...comorbidityForm.register('primaryCondition')} />
-                </div>
-                <div>
-                  <Label htmlFor="patientHistory">Patient History</Label>
-                  <Textarea id="patientHistory" {...comorbidityForm.register('patientHistory')} />
-                </div>
-                <Button type="submit" className="w-full" disabled={isComorbidityLoading}>
-                  {isComorbidityLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Simulate
-                </Button>
-              </form>
-               <Button onClick={() => comorbidityForm.handleSubmit(onComorbiditySubmit)()} className="w-full group-data-[collapsible=icon]:block hidden" size="icon" disabled={isComorbidityLoading}>
-                  {isComorbidityLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "S"}
-               </Button>
 
-              {comorbidityResult && (
-                <div className="mt-4 p-3 rounded-md bg-muted group-data-[collapsible=icon]:hidden">
-                  <h4 className="font-semibold">Result: {comorbidityResult.present ? "Present Comorbidities" : "No Comorbidities"}</h4>
-                  <p className="text-sm text-muted-foreground">{comorbidityResult.reasoning}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {currentUser.role !== 'patient' && (
+        <Tabs defaultValue="scenario" className="w-full px-2 group-data-[collapsible=icon]:px-0 flex-1">
+            <TabsList className="grid w-full grid-cols-2 group-data-[collapsible=icon]:hidden">
+            <TabsTrigger value="scenario">Scenario</TabsTrigger>
+            <TabsTrigger value="comorbidity">Comorbidity</TabsTrigger>
+            </TabsList>
+            <div className="w-full text-center p-2 group-data-[collapsible=icon]:block hidden">
+                <p className="text-xs text-muted-foreground">CONTROLS</p>
+            </div>
+            <TabsContent value="scenario">
+            <Card className="border-none shadow-none bg-transparent">
+                <CardHeader className="px-2 group-data-[collapsible=icon]:hidden">
+                <CardTitle>Generate Scenario</CardTitle>
+                <CardDescription>Create a personalized case.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 px-2">
+                <form onSubmit={scenarioForm.handleSubmit(onScenarioSubmit)} className="space-y-4 group-data-[collapsible=icon]:hidden">
+                    <div className="p-2 rounded-md bg-muted/50 border border-border/50">
+                    <Label htmlFor="studentId">Current User</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm font-medium">{currentUser?.name}</p>
+                    </div>
+                    </div>
+                    <div className="p-2 rounded-md bg-muted/50 border border-border/50">
+                    <Label htmlFor="specialty">Specialty</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                        {specialtyIcon(currentUser?.specialty || '')}
+                        <p className="text-sm font-medium">{currentUser?.specialty}</p>
+                    </div>
+                    </div>
+                    <div>
+                    <Label htmlFor="performanceData">Performance Notes</Label>
+                    <Textarea id="performanceData" {...scenarioForm.register('performanceData')} disabled={!currentUser} />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isScenarioLoading || !currentUser}>
+                    {isScenarioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Generate
+                    </Button>
+                </form>
+                <Button onClick={() => scenarioForm.handleSubmit(onScenarioSubmit)()} className="w-full group-data-[collapsible=icon]:block hidden" size="icon" disabled={isScenarioLoading || !currentUser}>
+                    {isScenarioLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "G"}
+                </Button>
+                </CardContent>
+            </Card>
+            </TabsContent>
+            <TabsContent value="comorbidity">
+            <Card className="border-none shadow-none bg-transparent">
+                <CardHeader className="px-2 group-data-[collapsible=icon]:hidden">
+                <CardTitle>Simulate Comorbidities</CardTitle>
+                <CardDescription>Check for related conditions.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 px-2">
+                <form onSubmit={comorbidityForm.handleSubmit(onComorbiditySubmit)} className="space-y-4 group-data-[collapsible=icon]:hidden">
+                    <div>
+                    <Label htmlFor="primaryCondition">Primary Condition</Label>
+                    <Input id="primaryCondition" {...comorbidityForm.register('primaryCondition')} />
+                    </div>
+                    <div>
+                    <Label htmlFor="patientHistory">Patient History</Label>
+                    <Textarea id="patientHistory" {...comorbidityForm.register('patientHistory')} />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isComorbidityLoading}>
+                    {isComorbidityLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Simulate
+                    </Button>
+                </form>
+                <Button onClick={() => comorbidityForm.handleSubmit(onComorbiditySubmit)()} className="w-full group-data-[collapsible=icon]:block hidden" size="icon" disabled={isComorbidityLoading}>
+                    {isComorbidityLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "S"}
+                </Button>
+
+                {comorbidityResult && (
+                    <div className="mt-4 p-3 rounded-md bg-muted group-data-[collapsible=icon]:hidden">
+                    <h4 className="font-semibold">Result: {comorbidityResult.present ? "Present Comorbidities" : "No Comorbidities"}</h4>
+                    <p className="text-sm text-muted-foreground">{comorbidityResult.reasoning}</p>
+                    </div>
+                )}
+                </CardContent>
+            </Card>
+            </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }

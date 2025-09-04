@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,6 +32,22 @@ export default function AddPatientPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+        const user: User = JSON.parse(userStr);
+        setCurrentUser(user);
+        if (user.role === 'doctor' || user.role === 'admin') {
+            setIsAuthorized(true);
+        } else {
+            router.push('/');
+        }
+    } else {
+        router.push('/login');
+    }
+  }, [router]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
@@ -48,10 +65,18 @@ export default function AddPatientPage() {
     });
     router.push('/');
   };
+  
+  if (!isAuthorized) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      )
+  }
 
   return (
     <DashboardLayout
-        sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} currentUser={currentUser} onUserChange={setCurrentUser} />}
+        sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} currentUser={currentUser} onUserChange={setCurrentUser} patientScenario={null} />}
     >
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
             <header className="flex items-center justify-between">

@@ -1,3 +1,4 @@
+
 import type { Patient } from "@/app/page";
 import type { User } from "@/components/user-switcher";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,7 +17,7 @@ export default function PatientInfoCard({ patient, doctor }: PatientInfoCardProp
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
             <CardTitle className="text-2xl font-headline text-primary">{patient.name}</CardTitle>
-            <CardDescription>Patient Details & Current Scenario | Attending: Dr. {doctor.name} ({doctor.specialty})</CardDescription>
+            <CardDescription>Patient Details & Current Scenario | Attending: {doctor.name} ({doctor.specialty})</CardDescription>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2"><UserIcon size={16} className="text-accent" /><span>{patient.gender}</span></div>
@@ -55,10 +56,12 @@ export default function PatientInfoCard({ patient, doctor }: PatientInfoCardProp
           </div>
         </div>
         
-        <DiagnosisReport
-          doctor={doctor}
-          scenario={patient.scenario}
-        />
+        {doctor.role !== 'patient' && (
+          <DiagnosisReport
+            doctor={doctor}
+            scenario={patient.scenario}
+          />
+        )}
 
       </CardContent>
     </Card>

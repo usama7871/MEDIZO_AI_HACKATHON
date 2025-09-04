@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -12,22 +13,14 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { SimuPatientLogo } from '@/components/icons';
 import { Loader2 } from 'lucide-react';
+import { allUsers } from '@/components/user-switcher'; // Import all users
 
 const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
+  email: z.string().email('Invalid email address'),
   password: z.string().min(1, 'Password is required'),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
-
-// Mock user data
-const mockUsers = {
-  'admin': 'password123',
-  'dr.reed': 'cardio',
-  'dr.tanaka': 'neuro',
-  'dr.khan': 'peds',
-};
-
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,17 +34,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     setTimeout(() => {
-        // @ts-ignore
-      if (mockUsers[data.username.toLowerCase()] === data.password) {
-        // In a real app, you would set a session cookie or token
-        localStorage.setItem('user', data.username);
-        toast({ title: 'Login Successful', description: `Welcome back, ${data.username}!` });
+      const user = allUsers.find(u => u.email.toLowerCase() === data.email.toLowerCase());
+      
+      // Mock password check - in a real app, this would be a secure check
+      if (user && user.password === data.password) {
+        localStorage.setItem('user', JSON.stringify(user));
+        toast({ title: 'Login Successful', description: `Welcome back, ${user.name}!` });
         router.push('/');
       } else {
         toast({
           variant: 'destructive',
           title: 'Login Failed',
-          description: 'Invalid username or password.',
+          description: 'Invalid email or password.',
         });
       }
       setIsLoading(false);
@@ -71,9 +65,9 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" placeholder="e.g., admin" {...register('username')} />
-              {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" placeholder="e.g., admin@simupatient.com" {...register('email')} />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
@@ -86,7 +80,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <p className="text-xs text-center text-muted-foreground mt-4">
-              Hint: Use 'admin' / 'password123' to log in.
+              Hint: Use 'admin@simupatient.com' / 'password123' to log in as admin.
           </p>
         </CardContent>
       </Card>
