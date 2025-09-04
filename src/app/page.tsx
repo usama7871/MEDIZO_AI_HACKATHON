@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import DashboardLayout from '@/components/dashboard-layout';
 import PatientInfoCard from '@/components/patient-info-card';
@@ -32,8 +32,6 @@ export type Patient = typeof defaultPatient;
 export default function Home() {
   const [patient, setPatient] = useState<Patient>(defaultPatient);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const router = useRouter();
-
 
   const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput) => {
     setPatient({
@@ -48,7 +46,7 @@ export default function Home() {
 
   return (
     <DashboardLayout
-      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} />}
+      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} patientScenario={patient.scenario} />}
     >
       <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
         <header className="flex items-center justify-between">

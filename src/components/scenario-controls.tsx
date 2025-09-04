@@ -37,9 +37,10 @@ type ScenarioControlsProps = {
     onScenarioGenerated: (scenario: GeneratePersonalizedScenarioOutput) => void;
     currentUser: User | null;
     onUserChange: (user: User | null) => void;
+    patientScenario: GeneratePersonalizedScenarioOutput; // Added for context
 };
 
-export default function ScenarioControls({ onScenarioGenerated, currentUser, onUserChange }: ScenarioControlsProps) {
+export default function ScenarioControls({ onScenarioGenerated, currentUser, onUserChange, patientScenario }: ScenarioControlsProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isScenarioLoading, setScenarioLoading] = useState(false);
@@ -67,13 +68,20 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
     }
   }, [currentUser, scenarioForm]);
 
+  useEffect(() => {
+    // Pass uploaded content to the form for submission
+    scenarioForm.setValue('medicalRecords', 
+        (currentUser?.medicalRecords || '') + 
+        (uploadedRecordContent ? `\n\n--- UPLOADED RECORD ---\n${uploadedRecordContent}` : '')
+    );
+  }, [uploadedRecordContent, currentUser, scenarioForm]);
+
 
   const onScenarioSubmit: SubmitHandler<ScenarioFormValues> = async (data) => {
     setScenarioLoading(true);
     const result = await handleGenerateScenario({ 
         ...data, 
-        datasetId: 'public-patient-data-v1',
-        medicalRecords: data.medicalRecords + (uploadedRecordContent ? `\n\n--- UPLOADED RECORD ---\n${uploadedRecordContent}` : '')
+        datasetId: 'public-patient-data-v1'
     });
     setScenarioLoading(false);
 
@@ -142,7 +150,7 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
       <Separator className="my-2 bg-sidebar-border/50" />
        <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.md" />
-        <Button variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent-foreground" onClick={handleFileSelect} disabled={isUploading}>
+        <Button variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent-foreground" onClick={handleFileSelect} disabled={isUploading || !currentUser}>
           {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
           <span className="group-data-[collapsible=icon]:hidden">Upload Report</span>
         </Button>
@@ -195,18 +203,14 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
                 </div>
                 <div>
                   <Label htmlFor="performanceData">Performance Notes</Label>
-                  <Textarea id="performanceData" {...scenarioForm.register('performanceData')} />
+                  <Textarea id="performanceData" {...scenarioForm.register('performanceData')} disabled={!currentUser} />
                 </div>
-                 <div>
-                  <Label htmlFor="medicalRecords">Additional Context / Records</Label>
-                  <Textarea id="medicalRecords" {...scenarioForm.register('medicalRecords')} placeholder="Paste any relevant medical records or context here..." />
-                </div>
-                <Button type="submit" className="w-full" disabled={isScenarioLoading}>
+                <Button type="submit" className="w-full" disabled={isScenarioLoading || !currentUser}>
                   {isScenarioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Generate
                 </Button>
               </form>
-               <Button onClick={() => scenarioForm.handleSubmit(onScenarioSubmit)()} className="w-full group-data-[collapsible=icon]:block hidden" size="icon" disabled={isScenarioLoading}>
+               <Button onClick={() => scenarioForm.handleSubmit(onScenarioSubmit)()} className="w-full group-data-[collapsible=icon]:block hidden" size="icon" disabled={isScenarioLoading || !currentUser}>
                   {isScenarioLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "G"}
                </Button>
             </CardContent>

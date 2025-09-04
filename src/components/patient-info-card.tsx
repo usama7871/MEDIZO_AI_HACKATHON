@@ -2,6 +2,7 @@ import type { Patient } from "@/app/page";
 import type { User } from "@/components/user-switcher";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { User as UserIcon, Calendar, Stethoscope, FileText, Activity } from "lucide-react";
+import DiagnosisReport from "./diagnosis-report";
 
 type PatientInfoCardProps = {
   patient: Patient;
@@ -53,6 +54,12 @@ export default function PatientInfoCard({ patient, doctor }: PatientInfoCardProp
             </ul>
           </div>
         </div>
+        
+        <DiagnosisReport
+          doctor={doctor}
+          scenario={patient.scenario}
+        />
+
       </CardContent>
     </Card>
   );
