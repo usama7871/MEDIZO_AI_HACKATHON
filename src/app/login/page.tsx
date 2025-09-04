@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { SimuPatientLogo } from '@/components/icons';
 import { Loader2 } from 'lucide-react';
-import { allUsers } from '@/components/user-switcher'; // Import all users
+import { useUserStore } from '@/hooks/use-user-store';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -26,6 +26,8 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { allUsers, setCurrentUser } = useUserStore();
+
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
   });
@@ -38,7 +40,7 @@ export default function LoginPage() {
       
       // Mock password check - in a real app, this would be a secure check
       if (user && user.password === data.password) {
-        localStorage.setItem('user', JSON.stringify(user));
+        setCurrentUser(user.id);
         toast({ title: 'Login Successful', description: `Welcome back, ${user.name}!` });
         router.push('/');
       } else {
