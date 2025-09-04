@@ -14,9 +14,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { handleGenerateScenario, handleSimulateComorbidities, handleFileUpload } from '@/app/actions';
-import { Loader2, PlusCircle, BrainCircuit, HeartPulse, Baby, Upload, UserPlus } from 'lucide-react';
+import { Loader2, PlusCircle, BrainCircuit, HeartPulse, Baby, Upload, UserPlus, ListOrdered } from 'lucide-react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
-import UserSwitcher, { type User } from './user-switcher';
+import UserSwitcher from './user-switcher';
+import { useUserStore } from '@/hooks/use-user-store';
 import { Separator } from './ui/separator';
 
 const scenarioSchema = z.object({
@@ -36,12 +37,10 @@ type ComorbidityFormValues = z.infer<typeof comorbiditySchema>;
 
 type ScenarioControlsProps = {
     onScenarioGenerated: (scenario: GeneratePersonalizedScenarioOutput | null) => void;
-    currentUser: User | null;
-    onUserChange: (user: User | null) => void;
-    patientScenario: GeneratePersonalizedScenarioOutput | null;
 };
 
-export default function ScenarioControls({ onScenarioGenerated, currentUser, onUserChange, patientScenario }: ScenarioControlsProps) {
+export default function ScenarioControls({ onScenarioGenerated }: ScenarioControlsProps) {
+  const { currentUser } = useUserStore();
   const { toast } = useToast();
   const router = useRouter();
   const [isScenarioLoading, setScenarioLoading] = useState(false);
@@ -146,7 +145,7 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
   return (
     <div className="flex flex-col h-full">
       <div className="p-2">
-        <UserSwitcher onUserChange={onUserChange} currentUser={currentUser}/>
+        <UserSwitcher />
       </div>
       <Separator className="my-2 bg-sidebar-border/50" />
        
@@ -174,6 +173,18 @@ export default function ScenarioControls({ onScenarioGenerated, currentUser, onU
                 <Button variant="outline" className="w-full border-primary/50 text-primary/80 hover:bg-primary/10 hover:text-primary" onClick={() => router.push('/add-doctor')}>
                     <UserPlus className="mr-2" />
                     <span className="group-data-[collapsible=icon]:hidden">Add Doctor</span>
+                </Button>
+            </div>
+            <Separator className="my-2 bg-sidebar-border/50" />
+        </>
+      )}
+
+      {currentUser.role === 'doctor' && (
+        <>
+            <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
+                <Button variant="outline" className="w-full border-primary/50 text-primary/80 hover:bg-primary/10 hover:text-primary" onClick={() => router.push('/manage-patients')}>
+                    <ListOrdered className="mr-2" />
+                    <span className="group-data-[collapsible=icon]:hidden">Manage Patients</span>
                 </Button>
             </div>
             <Separator className="my-2 bg-sidebar-border/50" />

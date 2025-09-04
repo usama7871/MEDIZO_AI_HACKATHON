@@ -2,110 +2,110 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Loader2, ShieldAlert } from 'lucide-react';
+
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import DashboardLayout from '@/components/dashboard-layout';
 import PatientInfoCard from '@/components/patient-info-card';
 import VitalsMonitor from '@/components/vitals-monitor';
 import InteractiveQA from '@/components/interactive-qa';
 import ScenarioControls from '@/components/scenario-controls';
-import type { User } from '@/components/user-switcher';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
-import { Card, CardDescription, CardTitle } from '@/components/ui/card';
-
-const defaultPatient = {
-  name: 'John Smith',
-  age: 72,
-  gender: 'Male',
-  primaryCondition: 'Acute Myocardial Infarction',
-  history: 'History of hypertension, hyperlipidemia, and a 30-pack-year smoking history.',
-  scenario: {
-    scenarioDescription: 'A 72-year-old male with a history of hypertension and hyperlipidemia presents to the emergency department with severe, crushing chest pain that started 2 hours ago. The pain radiates to his left arm and is associated with diaphoresis and nausea.',
-    learningObjectives: [
-      'Rapidly diagnose and manage ST-elevation myocardial infarction (STEMI).',
-      'Initiate appropriate reperfusion therapy.',
-      'Manage acute complications of MI.'
-    ],
-    comorbidities: 'Hypertension, Hyperlipidemia',
-  }
-};
-
-export type Patient = typeof defaultPatient;
+import { Card, CardDescription, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useUserStore } from '@/hooks/use-user-store';
+import { usePatientStore } from '@/hooks/use-patient-store.tsx';
+import type { Patient } from '@/hooks/use-patient-store.tsx';
 
 export default function Home() {
-  const [patient, setPatient] = useState<Patient | null>(defaultPatient);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { currentUser } = useUserStore();
+  const { activePatient, setActivePatient } = usePatientStore();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        setCurrentUser(user);
-      } catch (e) {
-        console.error("Failed to parse user from localStorage", e);
-        localStorage.removeItem('user');
-        router.push('/login');
-      }
-    } else {
+    setIsLoading(true);
+    if (!currentUser) {
       router.push('/login');
+    } else {
+      // If a doctor has no active patient, redirect to management page
+      if (currentUser.role === 'doctor' && !activePatient) {
+        // Find if they have an active patient in localStorage that isn't in the hook yet
+        const storedActivePatientId = localStorage.getItem(`activePatient_${currentUser.id}`);
+        if(storedActivePatientId) {
+            setActivePatient(storedActivePatientId);
+        }
+      }
+      setIsLoading(false);
     }
-  }, [router]);
+  }, [currentUser, router, activePatient, setActivePatient]);
 
   const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput | null) => {
-    if (newScenario) {
-      setPatient({
-        name: 'Simulated Patient',
-        age: Math.floor(Math.random() * 40) + 40,
-        gender: Math.random() > 0.5 ? 'Male' : 'Female',
-        primaryCondition: 'Personalized Scenario',
-        history: newScenario.comorbidities || 'Not specified.',
-        scenario: newScenario,
-      });
-    } else {
-      setPatient(null);
-    }
+    // This function might need to be re-thought with the new patient structure
+    // For now, it will not do anything as scenarios are tied to patients.
   };
-  
-  if (!currentUser) {
+
+  const MainContent = () => {
+    if (isLoading) {
       return (
-          <div className="flex h-screen w-full items-center justify-center bg-background">
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
+        <div className="flex h-full w-full items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    if (currentUser?.role === 'doctor' && !activePatient) {
+      return (
+        <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
+            <ShieldAlert className="h-12 w-12 text-accent mb-4" />
+            <CardTitle className="text-2xl font-headline">
+                No Active Patient Selected
+            </CardTitle>
+            <CardDescription className="mt-2 max-w-md">
+                To begin a simulation, please go to the patient management page and select a patient from your roster.
+            </CardDescription>
+            <CardFooter className="mt-6">
+                <Button onClick={() => router.push('/manage-patients')}>Manage Patients</Button>
+            </CardFooter>
+          </Card>
       )
+    }
+
+    if (activePatient && currentUser && (currentUser.role === 'doctor' || currentUser.role === 'admin')) {
+      return (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <div className="xl:col-span-3">
+            <PatientInfoCard patient={activePatient} doctor={currentUser} />
+          </div>
+          <div className="xl:col-span-2">
+            <VitalsMonitor />
+          </div>
+          <div className="xl:col-span-1">
+            <InteractiveQA patientHistory={activePatient.history} currentVitals="Heart Rate: 95 bpm, Blood Pressure: 140/90 mmHg, SpO2: 94%, Respiration Rate: 22/min" />
+          </div>
+        </div>
+      );
+    }
+
+    // Fallback for admin or other roles without a patient view
+    return (
+        <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
+        <CardTitle className="text-2xl font-headline">
+            Welcome, {currentUser?.name}
+        </CardTitle>
+        <CardDescription className="mt-2">
+            {currentUser?.role === 'admin' ? 'You can manage doctors from the sidebar.' : 'Your dashboard view.'}
+        </CardDescription>
+      </Card>
+    )
   }
 
   return (
     <DashboardLayout
-      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} currentUser={currentUser} onUserChange={setCurrentUser} patientScenario={patient?.scenario ?? null} />}
+      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} />}
     >
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
-        <header className="flex items-center justify-between">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary font-headline">Patient Simulation Dashboard</h1>
-        </header>
-        {patient && currentUser.role !== 'patient' ? (
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-3">
-              <PatientInfoCard patient={patient} doctor={currentUser} />
-            </div>
-            <div className="xl:col-span-2">
-              <VitalsMonitor />
-            </div>
-            <div className="xl:col-span-1">
-              <InteractiveQA patientHistory={patient.history} currentVitals="Heart Rate: 95 bpm, Blood Pressure: 140/90 mmHg, SpO2: 94%, Respiration Rate: 22/min" />
-            </div>
-          </div>
-        ) : (
-          <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
-            <CardTitle className="text-2xl font-headline">
-                {currentUser.role === 'patient' ? `Welcome, ${currentUser.name}`: "No Patient Scenario Loaded"}
-            </CardTitle>
-            <CardDescription className="mt-2">
-                {currentUser.role === 'patient' ? "Your records are being reviewed by our team." : "Please use the sidebar to generate a new scenario."}
-            </CardDescription>
-          </Card>
-        )}
+      <main className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8">
+        {MainContent()}
       </main>
     </DashboardLayout>
   );

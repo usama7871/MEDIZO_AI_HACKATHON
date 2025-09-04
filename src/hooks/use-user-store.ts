@@ -1,0 +1,112 @@
+
+'use client';
+
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  specialty: string;
+  medicalRecords?: string;
+  role: 'admin' | 'doctor' | 'patient';
+  password?: string;
+  patientIds?: string[];
+};
+
+// In a real app, this would come from a database.
+const initialUsers: User[] = [
+  { id: 'admin-001', name: 'Admin', email: 'admin@simupatient.com', avatar: '', specialty: 'System Administration', role: 'admin', password: 'password123' },
+  { id: 'doc-001', name: 'Dr. Evelyn Reed', email: 'e.reed@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', specialty: 'Cardiology', medicalRecords: 'Specializes in interventional cardiology. Research focus on acute coronary syndromes.', role: 'doctor', password: 'password123', patientIds: ['pat-smith-001'] },
+  { id: 'doc-002', name: 'Dr. Kenji Tanaka', email: 'k.tanaka@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d', specialty: 'Neurology', medicalRecords: 'Focus on stroke and neurocritical care. Published papers on ischemic stroke management.', role: 'doctor', password: 'password123', patientIds: [] },
+  { id: 'doc-003', name: 'Dr. Aisha Khan', email: 'a.khan@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026706d', specialty: 'Pediatrics', medicalRecords: 'Pediatric emergency medicine fellow. Interested in sepsis and respiratory distress in children.', role: 'doctor', password: 'password123', patientIds: [] },
+  { id: 'pat-001', name: 'John Smith (User)', email: 'j.smith@email.com', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026707d', specialty: 'N/A', medicalRecords: 'History of hypertension.', role: 'patient', password: 'password123' },
+];
+
+
+type UserStore = {
+  currentUser: User | null;
+  setCurrentUser: (userId: string) => void;
+  logout: () => void;
+  allUsers: User[];
+  setAllUsers: (users: User[]) => void;
+  addUser: (user: User) => void;
+};
+
+const UserContext = createContext<UserStore | null>(null);
+
+export function UserProvider({ children }: { children: React.ReactNode }) {
+  const [currentUser, setCurrentUserState] = useState<User | null>(null);
+  const [allUsers, setAllUsersState] = useState<User[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Initialize state from localStorage
+  useEffect(() => {
+    try {
+        const storedUsers = localStorage.getItem('allUsers');
+        const users = storedUsers ? JSON.parse(storedUsers) : initialUsers;
+        setAllUsersState(users);
+        
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            const user: User = JSON.parse(storedUser);
+            // Ensure the user from localStorage exists in our canonical list
+            if (users.some((u:User) => u.id === user.id)) {
+                 setCurrentUserState(user);
+            }
+        }
+    } catch (error) {
+        console.error("Failed to initialize user state from localStorage", error);
+        setAllUsersState(initialUsers); // Reset on error
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Persist allUsers to localStorage whenever it changes
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem('allUsers', JSON.stringify(allUsers));
+    }
+  }, [allUsers, isInitialized]);
+
+
+  const setCurrentUser = useCallback((userId: string) => {
+    const user = allUsers.find(u => u.id === userId);
+    if (user) {
+      setCurrentUserState(user);
+      localStorage.setItem('user', JSON.stringify(user));
+    }
+  }, [allUsers]);
+  
+  const setAllUsers = (users: User[]) => {
+      setAllUsersState(users);
+  };
+  
+  const addUser = (user: User) => {
+      setAllUsersState(prev => [...prev, user]);
+  }
+
+  const logout = () => {
+    // Also clear active patient for the user that is logging out.
+    if(currentUser){
+        localStorage.removeItem(`activePatient_${currentUser.id}`);
+    }
+    setCurrentUserState(null);
+    localStorage.removeItem('user');
+  };
+  
+  return (
+    <UserContext.Provider value={{ currentUser, setCurrentUser, logout, allUsers, setAllUsers, addUser }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+export function useUserStore() {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUserStore must be used within a UserProvider');
+  }
+  return context;
+}

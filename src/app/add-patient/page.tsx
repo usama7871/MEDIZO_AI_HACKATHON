@@ -8,7 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import DashboardLayout from '@/components/dashboard-layout';
 import ScenarioControls from '@/components/scenario-controls';
-import type { User } from '@/components/user-switcher';
+import { useUserStore } from '@/hooks/use-user-store';
+import { usePatientStore } from '@/hooks/use-patient-store.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import type { Patient } from '@/hooks/use-patient-store.tsx';
 
 const patientSchema = z.object({
   name: z.string().min(1, 'Patient name is required'),
@@ -28,55 +30,79 @@ const patientSchema = z.object({
 type PatientFormValues = z.infer<typeof patientSchema>;
 
 export default function AddPatientPage() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { currentUser, allUsers, setAllUsers } = useUserStore();
+  const { addPatient } = usePatientStore();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-        const user: User = JSON.parse(userStr);
-        setCurrentUser(user);
-        if (user.role === 'doctor' || user.role === 'admin') {
-            setIsAuthorized(true);
-        } else {
-            router.push('/');
-        }
-    } else {
-        router.push('/login');
+    if (!currentUser) {
+      router.push('/login');
+    } else if (currentUser.role !== 'doctor') {
+      toast({
+        variant: 'destructive',
+        title: 'Unauthorized',
+        description: 'You do not have permission to add patients.',
+      });
+      router.push('/');
     }
-  }, [router]);
+  }, [currentUser, router, toast]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
   });
 
   const onSubmit: SubmitHandler<PatientFormValues> = async (data) => {
+    if (!currentUser) return;
+
     setIsLoading(true);
-    // In a real app, you'd save this data. Here we'll just simulate it.
-    console.log('New Patient Data:', data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const newPatient: Patient = {
+      id: `pat-${Date.now()}`,
+      doctorId: currentUser.id,
+      ...data,
+      scenario: {
+        scenarioDescription: 'Awaiting initial scenario generation.',
+        learningObjectives: ['Establish baseline and await further instruction.'],
+        comorbidities: data.history,
+      }
+    };
+    
+    addPatient(newPatient);
+
+    // Update the doctor's patient list
+    const updatedUsers = allUsers.map(u => {
+      if (u.id === currentUser.id) {
+        return { ...u, patientIds: [...(u.patientIds || []), newPatient.id] };
+      }
+      return u;
+    });
+    setAllUsers(updatedUsers);
+
+
+    await new Promise(resolve => setTimeout(resolve, 500));
     setIsLoading(false);
     toast({
       title: 'Patient Added',
-      description: `${data.name} has been successfully added to the system.`,
+      description: `${data.name} has been successfully added to your patient list.`,
     });
-    router.push('/');
+    router.push('/manage-patients');
   };
   
-  if (!isAuthorized) {
+  if (!currentUser || currentUser.role !== 'doctor') {
       return (
-        <div className="flex items-center justify-center min-h-screen">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <DashboardLayout sidebarContent={null}>
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        </DashboardLayout>
       )
   }
 
   return (
     <DashboardLayout
-        sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} currentUser={currentUser} onUserChange={setCurrentUser} patientScenario={null} />}
+        sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} />}
     >
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
             <header className="flex items-center justify-between">
@@ -85,7 +111,7 @@ export default function AddPatientPage() {
             <Card className="max-w-2xl mx-auto">
                 <CardHeader>
                     <CardTitle>Patient Information</CardTitle>
-                    <CardDescription>Enter the details for the new patient.</CardDescription>
+                    <CardDescription>Enter the details for the new patient for Dr. {currentUser.name}.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -119,7 +145,7 @@ export default function AddPatientPage() {
 
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Add Patient
+                            Add Patient to My Roster
                         </Button>
                     </form>
                 </CardContent>
