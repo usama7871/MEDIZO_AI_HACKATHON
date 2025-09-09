@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
-import { useUserStore } from './use-user-store';
+import { useUserStore } from './use-user-store.tsx';
 
 export type Patient = {
   id: string; // This ID will match the corresponding User ID for the patient
@@ -62,7 +62,6 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
         setPatientsState(JSON.parse(storedPatients));
       } else {
         setPatientsState(initialPatients);
-        localStorage.setItem('patients', JSON.stringify(initialPatients));
       }
     } catch (error) {
       console.error("Failed to parse patients from localStorage", error);

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ShieldAlert, FileText } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard-layout';
@@ -61,12 +61,12 @@ export default function Home() {
 
     if (activePatient && currentUser.role === 'doctor') {
       return (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 h-full">
           <div className="xl:col-span-3">
             <PatientInfoCard patient={activePatient} doctor={currentUser} />
           </div>
           <div className="xl:col-span-2">
-            <VitalsMonitor />
+            <VitalsMonitor patient={activePatient}/>
           </div>
           <div className="xl:col-span-1">
             <InteractiveQA patientHistory={activePatient.history} currentVitals="Heart Rate: 95 bpm, Blood Pressure: 140/90 mmHg, SpO2: 94%, Respiration Rate: 22/min" />

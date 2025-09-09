@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import DashboardLayout from '@/components/dashboard-layout';
 import ScenarioControls from '@/components/scenario-controls';
-import { useUserStore } from '@/hooks/use-user-store';
+import { useUserStore } from '@/hooks/use-user-store.tsx';
 import { usePatientStore } from '@/hooks/use-patient-store.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,9 +18,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import type { Patient } from '@/hooks/use-patient-store.tsx';
+import type { User } from '@/hooks/use-user-store.tsx';
 
 const patientSchema = z.object({
   name: z.string().min(1, 'Patient name is required'),
+  email: z.string().email('An email is required for the patient user account.'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
   age: z.coerce.number().min(0, 'Age must be positive'),
   gender: z.string().min(1, 'Gender is required'),
   primaryCondition: z.string().min(1, 'Primary condition is required'),
@@ -30,7 +33,7 @@ const patientSchema = z.object({
 type PatientFormValues = z.infer<typeof patientSchema>;
 
 export default function AddPatientPage() {
-  const { currentUser, allUsers, setAllUsers } = useUserStore();
+  const { currentUser, addUser, allUsers, updateUser } = useUserStore();
   const { addPatient } = usePatientStore();
   const { toast } = useToast();
   const router = useRouter();
@@ -54,38 +57,61 @@ export default function AddPatientPage() {
   });
 
   const onSubmit: SubmitHandler<PatientFormValues> = async (data) => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== 'doctor') return;
 
     setIsLoading(true);
 
-    const newPatient: Patient = {
-      id: `pat-${Date.now()}`,
+    if(allUsers.find(u => u.email.toLowerCase() === data.email.toLowerCase())) {
+        toast({ variant: 'destructive', title: 'Error', description: 'A user with this email already exists.' });
+        setIsLoading(false);
+        return;
+    }
+
+    const patientId = `pat-${Date.now()}`;
+
+    // Create the patient user account
+    const newPatientUser: User = {
+      id: patientId,
+      name: `${data.name} (Patient)`,
+      email: data.email,
+      password: data.password,
+      avatar: `https://i.pravatar.cc/150?u=${patientId}`,
+      specialty: 'N/A',
+      role: 'patient',
+      medicalRecords: '',
+    };
+    addUser(newPatientUser);
+    
+    // Create the patient clinical record
+    const newPatientRecord: Patient = {
+      id: patientId,
       doctorId: currentUser.id,
-      ...data,
+      name: data.name,
+      age: data.age,
+      gender: data.gender,
+      primaryCondition: data.primaryCondition,
+      history: data.history,
       scenario: {
         scenarioDescription: 'Awaiting initial scenario generation.',
         learningObjectives: ['Establish baseline and await further instruction.'],
-        comorbidities: data.history,
+        comorbidities: '',
       }
     };
-    
-    addPatient(newPatient);
+    addPatient(newPatientRecord);
 
     // Update the doctor's patient list
-    const updatedUsers = allUsers.map(u => {
-      if (u.id === currentUser.id) {
-        return { ...u, patientIds: [...(u.patientIds || []), newPatient.id] };
-      }
-      return u;
-    });
-    setAllUsers(updatedUsers);
+    const updatedDoctor = {
+        ...currentUser,
+        patientIds: [...(currentUser.patientIds || []), newPatientRecord.id]
+    };
+    updateUser(updatedDoctor);
 
 
     await new Promise(resolve => setTimeout(resolve, 500));
     setIsLoading(false);
     toast({
       title: 'Patient Added',
-      description: `${data.name} has been successfully added to your patient list.`,
+      description: `${data.name} has been successfully added to your patient roster.`,
     });
     router.push('/manage-patients');
   };
@@ -111,10 +137,11 @@ export default function AddPatientPage() {
             <Card className="max-w-2xl mx-auto">
                 <CardHeader>
                     <CardTitle>Patient Information</CardTitle>
-                    <CardDescription>Enter the details for the new patient for Dr. {currentUser.name}.</CardDescription>
+                    <CardDescription>Enter the clinical details and create a user account for the new patient for Dr. {currentUser.name}.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                        <h3 className="text-lg font-medium text-accent">Clinical Details</h3>
                         <div>
                             <Label htmlFor="name">Patient Name</Label>
                             <Input id="name" {...register('name')} />
@@ -142,8 +169,21 @@ export default function AddPatientPage() {
                             <Textarea id="history" {...register('history')} />
                             {errors.history && <p className="text-destructive text-sm mt-1">{errors.history.message}</p>}
                         </div>
+                        
+                        <h3 className="text-lg font-medium text-accent pt-4">Patient Account</h3>
+                         <div>
+                            <Label htmlFor="email">Patient Email</Label>
+                            <Input id="email" type="email" {...register('email')} />
+                            {errors.email && <p className="text-destructive text-sm mt-1">{errors.email.message}</p>}
+                        </div>
+                        <div>
+                            <Label htmlFor="password">Temporary Password</Label>
+                            <Input id="password" type="password" {...register('password')} />
+                            {errors.password && <p className="text-destructive text-sm mt-1">{errors.password.message}</p>}
+                        </div>
 
-                        <Button type="submit" className="w-full" disabled={isLoading}>
+
+                        <Button type="submit" className="w-full !mt-8" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Add Patient to My Roster
                         </Button>

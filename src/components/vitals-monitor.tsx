@@ -1,42 +1,74 @@
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef, memo } from 'react';
+import type { Patient } from '@/hooks/use-patient-store.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { HeartPulse, Gauge, Wind, Waves } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // --- Constants ---
-const VITAL_DATA_LENGTH = 150; // More data points for a smoother, longer wave
-const TICK_RATE_MS = 50; // Faster updates for smoother animation
+const VITAL_DATA_LENGTH = 150;
+const TICK_RATE_MS = 50;
 
-// --- Waveform Patterns (more detailed) ---
+// --- Waveform Patterns ---
 const createEcgPattern = () => [0,0,0,0.1,0.2,0.1,0,-0.5,2.8,-1.5,0.3,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 const createBpPattern = () => [0.7,0.8,0.9,1,0.95,0.85,0.8,0.75,0.78,0.72,0.6,0.5,0.4,0.3,0.2,0.2,0.3,0.4,0.5,0.6];
 const createRespPattern = () => Array.from({ length: 40 }, (_, i) => (Math.sin((i / 39) * Math.PI) * 0.8) + 0.1);
 const createSpo2Pattern = () => [0.5,0.6,0.8,0.95,1,0.9,0.7,0.6,0.55,0.52,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5];
 
+const getVitalParams = (condition: string) => {
+    // Default to a stable patient
+    let params = {
+        hr: { base: 75, fluctuation: 1, speed: 1.5, yDomain: [50, 100] as [number, number] },
+        bp: { base: 120, fluctuation: 2, speed: 1.5, yDomain: [70, 140] as [number, number] },
+        spo2: { base: 98, fluctuation: 0.5, speed: 1.5, yDomain: [90, 100] as [number, number] },
+        resp: { base: 16, fluctuation: 1, speed: 1, yDomain: [10, 25] as [number, number] },
+    };
+
+    // Adjust for specific conditions (case-insensitive)
+    const lowerCaseCondition = condition.toLowerCase();
+    if (lowerCaseCondition.includes('myocardial infarction') || lowerCaseCondition.includes('chest pain')) {
+        params = {
+            hr: { base: 110, fluctuation: 1.5, speed: 2.5, yDomain: [50, 150] },
+            bp: { base: 95, fluctuation: 2.5, speed: 2.5, yDomain: [70, 130] },
+            spo2: { base: 93, fluctuation: 0.5, speed: 2.5, yDomain: [85, 100] },
+            resp: { base: 24, fluctuation: 1, speed: 1, yDomain: [10, 35] },
+        };
+    } else if (lowerCaseCondition.includes('sepsis')) {
+        params = {
+            hr: { base: 125, fluctuation: 2, speed: 3, yDomain: [60, 160] },
+            bp: { base: 85, fluctuation: 3, speed: 3, yDomain: [60, 120] },
+            spo2: { base: 92, fluctuation: 1, speed: 3, yDomain: [80, 100] },
+            resp: { base: 28, fluctuation: 1.5, speed: 1.5, yDomain: [15, 40] },
+        };
+    }
+    // Add more conditions here as needed...
+
+    return params;
+}
+
 // --- Custom Hook for Vital Sign Simulation ---
-const useVitalSign = (baseValue: number, fluctuation: number, min: number, max: number, pattern: number[], speed: number) => {
+const useVitalSign = (baseValue: number, fluctuation: number, pattern: number[], speed: number, isClient: boolean) => {
     const [data, setData] = useState<number[]>([]);
     const patternIndexRef = useRef(0);
 
     useEffect(() => {
-        // Initialize data on the client-side
+        if (!isClient) return;
+
         setData(Array(VITAL_DATA_LENGTH).fill(baseValue));
         
         const interval = setInterval(() => {
             const patternValue = pattern[patternIndexRef.current];
             const noise = (Math.random() - 0.5) * fluctuation;
             let newValue = baseValue + (patternValue * fluctuation * (pattern === createEcgPattern() ? 6 : 4)) + noise;
-            newValue = Math.max(min, Math.min(max, newValue));
 
             setData(prev => [...prev.slice(1), newValue]);
-
             patternIndexRef.current = (patternIndexRef.current + 1) % pattern.length;
         }, TICK_RATE_MS * (1 / speed));
 
         return () => clearInterval(interval);
-    }, [baseValue, fluctuation, min, max, pattern, speed]);
+    }, [baseValue, fluctuation, pattern, speed, isClient]);
 
     return data;
 };
@@ -86,7 +118,7 @@ const VitalChart = ({ title, unit, data, color, Icon, yDomain }: { title: string
             <CardContent className="flex-1 p-0">
                 <div className="h-[100px] w-full relative">
                      <div className="absolute inset-0 opacity-10" style={{background: `radial-gradient(ellipse at center, ${color} 0%, transparent 70%)`}}/>
-                     <SvgWaveform data={data} color={color} yDomain={yDomain} />
+                     {data.length > 0 && <SvgWaveform data={data} color={color} yDomain={yDomain} />}
                 </div>
             </CardContent>
         </Card>
@@ -94,30 +126,36 @@ const VitalChart = ({ title, unit, data, color, Icon, yDomain }: { title: string
 };
 
 // --- Main Vitals Monitor Component ---
-export default function VitalsMonitor() {
+export default function VitalsMonitor({ patient }: { patient: Patient }) {
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const { hr, bp, spo2, resp } = useMemo(() => getVitalParams(patient.primaryCondition), [patient.primaryCondition]);
+  
   const ecgPattern = useMemo(() => createEcgPattern(), []);
   const bpPattern = useMemo(() => createBpPattern(), []);
   const respPattern = useMemo(() => createRespPattern(), []);
   const spo2Pattern = useMemo(() => createSpo2Pattern(), []);
 
-  // Simulating a patient in distress
-  const hrData = useVitalSign(110, 1.5, 80, 140, ecgPattern, 2.5);
-  const bpData = useVitalSign(95, 2.5, 80, 120, bpPattern, 2.5);
-  const spo2Data = useVitalSign(93, 0.5, 90, 98, spo2Pattern, 2.5);
-  const respData = useVitalSign(24, 1, 18, 30, respPattern, 1);
+  const hrData = useVitalSign(hr.base, hr.fluctuation, ecgPattern, hr.speed, isClient);
+  const bpData = useVitalSign(bp.base, bp.fluctuation, bpPattern, bp.speed, isClient);
+  const spo2Data = useVitalSign(spo2.base, spo2.fluctuation, spo2Pattern, spo2.speed, isClient);
+  const respData = useVitalSign(resp.base, resp.fluctuation, respPattern, resp.speed, isClient);
 
   return (
-    <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20">
+    <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20 h-full">
       <CardHeader>
         <CardTitle>Vitals Monitor</CardTitle>
-        <CardDescription>Real-time physiological data from the patient.</CardDescription>
+        <CardDescription>Real-time physiological data for {patient.name}.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <VitalChart title="Heart Rate" unit="bpm" data={hrData} color="hsl(var(--chart-1))" Icon={HeartPulse} yDomain={[50, 150]} />
-          <VitalChart title="Systolic BP" unit="mmHg" data={bpData} color="hsl(var(--chart-2))" Icon={Gauge} yDomain={[70, 130]} />
-          <VitalChart title="SpO2" unit="%" data={spo2Data} color="hsl(var(--chart-3))" Icon={Waves} yDomain={[85, 100]} />
-          <VitalChart title="Respiration" unit="/min" data={respData} color="hsl(var(--chart-4))" Icon={Wind} yDomain={[10, 35]} />
+          <VitalChart title="Heart Rate" unit="bpm" data={hrData} color="hsl(var(--chart-1))" Icon={HeartPulse} yDomain={hr.yDomain} />
+          <VitalChart title="Systolic BP" unit="mmHg" data={bpData} color="hsl(var(--chart-2))" Icon={Gauge} yDomain={bp.yDomain} />
+          <VitalChart title="SpO2" unit="%" data={spo2Data} color="hsl(var(--chart-3))" Icon={Waves} yDomain={spo2.yDomain} />
+          <VitalChart title="Respiration" unit="/min" data={respData} color="hsl(var(--chart-4))" Icon={Wind} yDomain={resp.yDomain} />
         </div>
       </CardContent>
     </Card>
