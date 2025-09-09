@@ -1,14 +1,15 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import DashboardLayout from '@/components/dashboard-layout';
 import ScenarioControls from '@/components/scenario-controls';
-import type { User } from '@/components/user-switcher';
+import { useUserStore } from '@/hooks/use-user-store.tsx';
+import type { User } from '@/hooks/use-user-store.tsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,10 +28,23 @@ const doctorSchema = z.object({
 type DoctorFormValues = z.infer<typeof doctorSchema>;
 
 export default function AddDoctorPage() {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { currentUser, addUser, allUsers } = useUserStore();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
+   useEffect(() => {
+    if (!currentUser) {
+      router.push('/login');
+    } else if (currentUser.role !== 'admin') {
+      toast({
+        variant: 'destructive',
+        title: 'Unauthorized',
+        description: 'You do not have permission to add doctors.',
+      });
+      router.push('/');
+    }
+  }, [currentUser, router, toast]);
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<DoctorFormValues>({
     resolver: zodResolver(doctorSchema),
@@ -38,20 +52,45 @@ export default function AddDoctorPage() {
 
   const onSubmit: SubmitHandler<DoctorFormValues> = async (data) => {
     setIsLoading(true);
-    // In a real app, you'd save this data. Here we'll just simulate it by logging.
-    console.log('New Doctor Data:', data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    if(allUsers.find(u => u.email.toLowerCase() === data.email.toLowerCase())) {
+        toast({ variant: 'destructive', title: 'Error', description: 'A user with this email already exists.' });
+        setIsLoading(false);
+        return;
+    }
+
+    const newDoctor: User = {
+        id: `doc-${Date.now()}`,
+        role: 'doctor',
+        avatar: `https://i.pravatar.cc/150?u=${Date.now()}`,
+        patientIds: [],
+        ...data,
+    }
+
+    addUser(newDoctor);
+
+    await new Promise(resolve => setTimeout(resolve, 500));
     setIsLoading(false);
     toast({
       title: 'Doctor Added',
       description: `${data.name} has been successfully added to the system.`,
     });
-    router.push('/');
+    router.push('/'); // Or redirect to a doctor management page
   };
+  
+  if (!currentUser || currentUser.role !== 'admin') {
+      return (
+        <DashboardLayout sidebarContent={null}>
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        </DashboardLayout>
+      )
+  }
 
   return (
     <DashboardLayout
-        sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} currentUser={currentUser} onUserChange={setCurrentUser} patientScenario={null} />}
+        sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} />}
     >
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
             <header className="flex items-center justify-between">

@@ -21,13 +21,14 @@ const initialUsers: User[] = [
   { id: 'doc-001', name: 'Dr. Evelyn Reed', email: 'e.reed@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', specialty: 'Cardiology', medicalRecords: 'Specializes in interventional cardiology. Research focus on acute coronary syndromes.', role: 'doctor', password: 'password123', patientIds: ['pat-smith-001'] },
   { id: 'doc-002', name: 'Dr. Kenji Tanaka', email: 'k.tanaka@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d', specialty: 'Neurology', medicalRecords: 'Focus on stroke and neurocritical care. Published papers on ischemic stroke management.', role: 'doctor', password: 'password123', patientIds: [] },
   { id: 'doc-003', name: 'Dr. Aisha Khan', email: 'a.khan@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026706d', specialty: 'Pediatrics', medicalRecords: 'Pediatric emergency medicine fellow. Interested in sepsis and respiratory distress in children.', role: 'doctor', password: 'password123', patientIds: [] },
-  { id: 'pat-001', name: 'John Smith (User)', email: 'j.smith@email.com', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026707d', specialty: 'N/A', medicalRecords: 'History of hypertension.', role: 'patient', password: 'password123' },
+  { id: 'pat-001', name: 'John Smith (Patient)', email: 'j.smith@email.com', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026707d', specialty: 'N/A', medicalRecords: 'History of hypertension.', role: 'patient', password: 'password123' },
 ];
 
 
 type UserStore = {
   currentUser: User | null;
   setCurrentUser: (userId: string) => void;
+  updateUser: (updatedUser: User) => void;
   logout: () => void;
   allUsers: User[];
   setAllUsers: (users: User[]) => void;
@@ -52,8 +53,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         if (storedUser) {
             const user: User = JSON.parse(storedUser);
             // Ensure the user from localStorage exists in our canonical list
-            if (users.some((u:User) => u.id === user.id)) {
-                 setCurrentUserState(user);
+            const fullUser = users.find((u:User) => u.id === user.id)
+            if (fullUser) {
+                 setCurrentUserState(fullUser);
             }
         }
     } catch (error) {
@@ -87,6 +89,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setAllUsersState(prev => [...prev, user]);
   }
 
+  const updateUser = (updatedUser: User) => {
+    setAllUsersState(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+    if (currentUser?.id === updatedUser.id) {
+        setCurrentUserState(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  }
+
   const logout = () => {
     // Also clear active patient for the user that is logging out.
     if(currentUser){
@@ -97,7 +107,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
   
   return (
-    <UserContext.Provider value={{ currentUser, setCurrentUser, logout, allUsers, setAllUsers, addUser }}>
+    <UserContext.Provider value={{ currentUser, setCurrentUser, logout, allUsers, setAllUsers, addUser, updateUser }}>
       {children}
     </UserContext.Provider>
   );

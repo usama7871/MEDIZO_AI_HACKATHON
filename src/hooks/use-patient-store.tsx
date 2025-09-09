@@ -3,9 +3,10 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
+import { useUserStore } from './use-user-store.tsx';
 
 export type Patient = {
-  id: string;
+  id: string; // This ID will match the corresponding User ID for the patient
   doctorId: string;
   name: string;
   age: number;
@@ -18,7 +19,7 @@ export type Patient = {
 // Initial mock patient data
 const initialPatients: Patient[] = [
   {
-    id: 'pat-smith-001',
+    id: 'pat-001', // This ID matches the patient user's ID
     doctorId: 'doc-001',
     name: 'John Smith',
     age: 72,
@@ -41,6 +42,7 @@ type PatientStore = {
   patients: Patient[];
   setPatients: (patients: Patient[]) => void;
   addPatient: (patient: Patient) => void;
+  updatePatient: (patient: Patient) => void;
   activePatient: Patient | null;
   setActivePatient: (patientId: string | null) => void;
 };
@@ -51,6 +53,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   const [patients, setPatientsState] = useState<Patient[]>([]);
   const [activePatient, setActivePatientState] = useState<Patient | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const { currentUser } = useUserStore();
 
   useEffect(() => {
     try {
@@ -80,21 +83,20 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   
   const addPatient = (patient: Patient) => {
     setPatientsState(prev => [...prev, patient]);
+  };
+
+  const updatePatient = (updatedPatient: Patient) => {
+    setPatientsState(prev => prev.map(p => p.id === updatedPatient.id ? updatedPatient : p));
+    if (activePatient?.id === updatedPatient.id) {
+        setActivePatientState(updatedPatient);
+    }
   }
 
   const setActivePatient = useCallback((patientId: string | null) => {
     if (patientId === null) {
       setActivePatientState(null);
-      // In a multi-doctor scenario, you might not want to clear this globally
-      // but based on the current user. For now, this is simple.
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-          try {
-            const currentUser = JSON.parse(userStr);
-            localStorage.removeItem(`activePatient_${currentUser.id}`);
-          } catch (e) {
-            console.error("Error parsing user from local storage on logout", e);
-          }
+      if (currentUser) {
+         localStorage.removeItem(`activePatient_${currentUser.id}`);
       }
       return;
     }
@@ -104,31 +106,24 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       setActivePatientState(patient);
       localStorage.setItem(`activePatient_${patient.doctorId}`, patient.id);
     }
-  }, [patients]);
+  }, [patients, currentUser]);
   
   // Effect to load the active patient for the current user on startup
   useEffect(() => {
-    if (isInitialized) {
-        const userStr = localStorage.getItem('user');
-        if(userStr) {
-            try {
-                const currentUser = JSON.parse(userStr);
-                if (currentUser.role === 'doctor') {
-                    const activeId = localStorage.getItem(`activePatient_${currentUser.id}`);
-                    if (activeId) {
-                        setActivePatient(activeId);
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to parse user from local storage for active patient", e)
+    if (isInitialized && currentUser) {
+        if (currentUser.role === 'doctor') {
+            const activeId = localStorage.getItem(`activePatient_${currentUser.id}`);
+            if (activeId) {
+                const patient = patients.find(p => p.id === activeId);
+                setActivePatientState(patient || null);
             }
         }
     }
-  }, [isInitialized, setActivePatient]);
+  }, [isInitialized, currentUser, patients]);
 
 
   return (
-    <PatientContext.Provider value={{ patients, setPatients, addPatient, activePatient, setActivePatient }}>
+    <PatientContext.Provider value={{ patients, setPatients, addPatient, updatePatient, activePatient, setActivePatient }}>
       {children}
     </PatientContext.Provider>
   );

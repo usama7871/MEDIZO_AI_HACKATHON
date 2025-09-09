@@ -3,19 +3,16 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, ShieldAlert } from 'lucide-react';
-
-import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
+import { Loader2, ShieldAlert, FileText } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard-layout';
 import PatientInfoCard from '@/components/patient-info-card';
 import VitalsMonitor from '@/components/vitals-monitor';
 import InteractiveQA from '@/components/interactive-qa';
 import ScenarioControls from '@/components/scenario-controls';
-import { Card, CardDescription, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle, CardFooter, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useUserStore } from '@/hooks/use-user-store';
+import { useUserStore } from '@/hooks/use-user-store.tsx';
 import { usePatientStore } from '@/hooks/use-patient-store.tsx';
-import type { Patient } from '@/hooks/use-patient-store.tsx';
 
 export default function Home() {
   const { currentUser } = useUserStore();
@@ -28,9 +25,7 @@ export default function Home() {
     if (!currentUser) {
       router.push('/login');
     } else {
-      // If a doctor has no active patient, redirect to management page
       if (currentUser.role === 'doctor' && !activePatient) {
-        // Find if they have an active patient in localStorage that isn't in the hook yet
         const storedActivePatientId = localStorage.getItem(`activePatient_${currentUser.id}`);
         if(storedActivePatientId) {
             setActivePatient(storedActivePatientId);
@@ -39,11 +34,6 @@ export default function Home() {
       setIsLoading(false);
     }
   }, [currentUser, router, activePatient, setActivePatient]);
-
-  const handleScenarioGenerated = (newScenario: GeneratePersonalizedScenarioOutput | null) => {
-    // This function might need to be re-thought with the new patient structure
-    // For now, it will not do anything as scenarios are tied to patients.
-  };
 
   const MainContent = () => {
     if (isLoading) {
@@ -71,7 +61,7 @@ export default function Home() {
       )
     }
 
-    if (activePatient && currentUser && (currentUser.role === 'doctor' || currentUser.role === 'admin')) {
+    if (activePatient && currentUser?.role === 'doctor') {
       return (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-3">
@@ -87,6 +77,30 @@ export default function Home() {
       );
     }
 
+    if (currentUser?.role === 'patient') {
+         return (
+             <Card className="w-full max-w-2xl bg-card/80">
+                 <CardHeader>
+                    <CardTitle className="font-headline text-2xl">Welcome, {currentUser.name}</CardTitle>
+                    <CardDescription>You can manage your medical records here. This information will be available to your doctor for simulations.</CardDescription>
+                 </CardHeader>
+                 <CardContent>
+                     <div className="flex items-start gap-4 rounded-lg border bg-muted/50 p-4">
+                        <FileText className="h-8 w-8 text-primary mt-1" />
+                        <div>
+                            <h3 className="font-semibold">Your Medical Records</h3>
+                            {currentUser.medicalRecords ? (
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-2">{currentUser.medicalRecords}</p>
+                            ) : (
+                                <p className="text-sm text-muted-foreground mt-2">You have not uploaded any medical records yet. Use the "Upload Report" button in the sidebar to add a file.</p>
+                            )}
+                        </div>
+                     </div>
+                 </CardContent>
+             </Card>
+         )
+    }
+
     // Fallback for admin or other roles without a patient view
     return (
         <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
@@ -94,7 +108,7 @@ export default function Home() {
             Welcome, {currentUser?.name}
         </CardTitle>
         <CardDescription className="mt-2">
-            {currentUser?.role === 'admin' ? 'You can manage doctors from the sidebar.' : 'Your dashboard view.'}
+            {currentUser?.role === 'admin' ? 'You have administrative access. You can manage doctors from the sidebar.' : 'Your dashboard view.'}
         </CardDescription>
       </Card>
     )
@@ -102,7 +116,7 @@ export default function Home() {
 
   return (
     <DashboardLayout
-      sidebarContent={<ScenarioControls onScenarioGenerated={handleScenarioGenerated} />}
+      sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} />}
     >
       <main className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8">
         {MainContent()}

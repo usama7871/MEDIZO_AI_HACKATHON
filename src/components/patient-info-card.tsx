@@ -1,6 +1,7 @@
 
 import type { Patient } from "@/hooks/use-patient-store.tsx";
-import type { User } from "@/hooks/use-user-store";
+import type { User } from "@/hooks/use-user-store.tsx";
+import { useUserStore } from "@/hooks/use-user-store.tsx";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { User as UserIcon, Calendar, Stethoscope, FileText, Activity } from "lucide-react";
 import DiagnosisReport from "./diagnosis-report";
@@ -11,6 +12,16 @@ type PatientInfoCardProps = {
 };
 
 export default function PatientInfoCard({ patient, doctor }: PatientInfoCardProps) {
+  const { allUsers } = useUserStore();
+  const patientUser = allUsers.find(u => u.id === patient.id);
+  
+  // Combine records from the doctor's notes and patient's own uploaded records
+  const combinedMedicalRecords = [
+      doctor.medicalRecords,
+      patientUser?.medicalRecords
+  ].filter(Boolean).join('\n\n---\n\n');
+
+
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20">
       <CardHeader>
@@ -60,6 +71,7 @@ export default function PatientInfoCard({ patient, doctor }: PatientInfoCardProp
           <DiagnosisReport
             doctor={doctor}
             scenario={patient.scenario}
+            patientRecords={combinedMedicalRecords}
           />
         )}
 

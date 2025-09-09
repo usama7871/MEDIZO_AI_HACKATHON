@@ -17,7 +17,8 @@ import { handleGenerateScenario, handleSimulateComorbidities, handleFileUpload }
 import { Loader2, PlusCircle, BrainCircuit, HeartPulse, Baby, Upload, UserPlus, ListOrdered } from 'lucide-react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import UserSwitcher from './user-switcher';
-import { useUserStore } from '@/hooks/use-user-store';
+import { useUserStore } from '@/hooks/use-user-store.tsx';
+import { usePatientStore } from '@/hooks/use-patient-store.tsx';
 import { Separator } from './ui/separator';
 
 const scenarioSchema = z.object({
@@ -40,14 +41,14 @@ type ScenarioControlsProps = {
 };
 
 export default function ScenarioControls({ onScenarioGenerated }: ScenarioControlsProps) {
-  const { currentUser } = useUserStore();
+  const { currentUser, updateUser } = useUserStore();
+  const { activePatient, updatePatient } = usePatientStore();
   const { toast } = useToast();
   const router = useRouter();
   const [isScenarioLoading, setScenarioLoading] = useState(false);
   const [isComorbidityLoading, setComorbidityLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [comorbidityResult, setComorbidityResult] = useState<{ present: boolean, reasoning: string } | null>(null);
-  const [uploadedRecordContent, setUploadedRecordContent] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scenarioForm = useForm<ScenarioFormValues>({
@@ -64,20 +65,31 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
     if (currentUser) {
       scenarioForm.setValue('studentId', currentUser.id);
       scenarioForm.setValue('specialty', currentUser.specialty);
-      scenarioForm.setValue('medicalRecords', currentUser.medicalRecords);
     }
   }, [currentUser, scenarioForm]);
 
   useEffect(() => {
-    // Pass uploaded content to the form for submission
-    scenarioForm.setValue('medicalRecords', 
-        (currentUser?.medicalRecords || '') + 
-        (uploadedRecordContent ? `\n\n--- UPLOADED RECORD ---\n${uploadedRecordContent}` : '')
-    );
-  }, [uploadedRecordContent, currentUser, scenarioForm]);
+    // This effect ensures the form has the latest medical records
+    // from the active patient context for scenario generation.
+    if (activePatient) {
+        const patientUser = useUserStore.getState().allUsers.find(u => u.id === activePatient.id);
+        const combinedRecords = [
+            activePatient.history,
+            patientUser?.medicalRecords // Records uploaded by the patient user
+        ].filter(Boolean).join('\n\n--- UPLOADED RECORDS ---\n');
+        scenarioForm.setValue('medicalRecords', combinedRecords);
+    } else if (currentUser) {
+        // Fallback to current user's records if no patient is active
+        scenarioForm.setValue('medicalRecords', currentUser.medicalRecords || '');
+    }
+  }, [activePatient, currentUser, scenarioForm]);
 
 
   const onScenarioSubmit: SubmitHandler<ScenarioFormValues> = async (data) => {
+    if (!activePatient) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No active patient selected. Please select a patient to generate a new scenario.' });
+        return;
+    }
     setScenarioLoading(true);
     const result = await handleGenerateScenario({ 
         ...data, 
@@ -86,7 +98,9 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
     setScenarioLoading(false);
 
     if (result.success && result.data) {
-      toast({ title: 'Scenario Generated', description: 'A new patient scenario has been created.' });
+      toast({ title: 'New Scenario Generated', description: `Scenario updated for ${activePatient.name}.` });
+      // Update the active patient's scenario in the global state
+      updatePatient({ ...activePatient, scenario: result.data });
       onScenarioGenerated(result.data);
     } else {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
@@ -99,7 +113,7 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !currentUser) return;
 
     setIsUploading(true);
     const formData = new FormData();
@@ -110,10 +124,10 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
 
     if (result.success && result.data) {
       toast({ title: 'File Uploaded', description: `${file.name} has been processed.` });
-      setUploadedRecordContent(result.data.recordContent);
+      // Update the current user's record in the global state
+      updateUser({ ...currentUser, medicalRecords: (currentUser.medicalRecords ? currentUser.medicalRecords + '\n\n' : '') + `--- UPLOADED ${new Date().toISOString()} ---\n` + result.data.recordContent });
     } else {
       toast({ variant: 'destructive', title: 'Upload Failed', description: result.error });
-      setUploadedRecordContent(null);
     }
   };
 
@@ -149,18 +163,18 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
       </div>
       <Separator className="my-2 bg-sidebar-border/50" />
        
-       {currentUser.role !== 'patient' && (
+       {(currentUser.role === 'doctor' || currentUser.role === 'patient') && (
          <>
             <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.md" />
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.md,.pdf" />
                 <Button variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent-foreground" onClick={handleFileSelect} disabled={isUploading}>
                 {isUploading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
                 <span className="group-data-[collapsible=icon]:hidden">Upload Report</span>
                 </Button>
             </div>
-            {uploadedRecordContent && (
+            {currentUser.medicalRecords && (
                 <div className="p-2 group-data-[collapsible=icon]:hidden">
-                    <p className="text-xs text-muted-foreground truncate">Loaded: {fileInputRef.current?.files?.[0]?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">Medical records are on file.</p>
                 </div>
             )}
             <Separator className="my-2 bg-sidebar-border/50" />
@@ -187,12 +201,6 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
                     <span className="group-data-[collapsible=icon]:hidden">Manage Patients</span>
                 </Button>
             </div>
-            <Separator className="my-2 bg-sidebar-border/50" />
-        </>
-      )}
-
-      { (currentUser.role === 'admin' || currentUser.role === 'doctor') && (
-        <>
             <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                 <Button variant="outline" className="w-full border-primary/50 text-primary/80 hover:bg-primary/10 hover:text-primary" onClick={() => router.push('/add-patient')}>
                     <PlusCircle className="mr-2" />
@@ -203,7 +211,7 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
         </>
       )}
 
-      {currentUser.role !== 'patient' && (
+      { currentUser.role !== 'patient' && (
         <Tabs defaultValue="scenario" className="w-full px-2 group-data-[collapsible=icon]:px-0 flex-1">
             <TabsList className="grid w-full grid-cols-2 group-data-[collapsible=icon]:hidden">
             <TabsTrigger value="scenario">Scenario</TabsTrigger>
@@ -216,35 +224,38 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
             <Card className="border-none shadow-none bg-transparent">
                 <CardHeader className="px-2 group-data-[collapsible=icon]:hidden">
                 <CardTitle>Generate Scenario</CardTitle>
-                <CardDescription>Create a personalized case.</CardDescription>
+                <CardDescription>Create a case for the active patient.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 px-2">
                 <form onSubmit={scenarioForm.handleSubmit(onScenarioSubmit)} className="space-y-4 group-data-[collapsible=icon]:hidden">
                     <div className="p-2 rounded-md bg-muted/50 border border-border/50">
-                    <Label htmlFor="studentId">Current User</Label>
+                    <Label htmlFor="studentId">Active Patient</Label>
                     <div className="flex items-center gap-2 mt-1">
-                        <p className="text-sm font-medium">{currentUser?.name}</p>
+                        <p className="text-sm font-medium">{activePatient ? activePatient.name : 'None Selected'}</p>
                     </div>
                     </div>
                     <div className="p-2 rounded-md bg-muted/50 border border-border/50">
-                    <Label htmlFor="specialty">Specialty</Label>
+                    <Label htmlFor="specialty">Attending Doctor</Label>
                     <div className="flex items-center gap-2 mt-1">
                         {specialtyIcon(currentUser?.specialty || '')}
-                        <p className="text-sm font-medium">{currentUser?.specialty}</p>
+                        <p className="text-sm font-medium">{currentUser?.name} ({currentUser?.specialty})</p>
                     </div>
                     </div>
                     <div>
                     <Label htmlFor="performanceData">Performance Notes</Label>
-                    <Textarea id="performanceData" {...scenarioForm.register('performanceData')} disabled={!currentUser} />
+                    <Textarea id="performanceData" {...scenarioForm.register('performanceData')} disabled={!currentUser || !activePatient} />
                     </div>
-                    <Button type="submit" className="w-full" disabled={isScenarioLoading || !currentUser}>
+                    <Button type="submit" className="w-full" disabled={isScenarioLoading || !currentUser || !activePatient}>
                     {isScenarioLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Generate
+                    Generate New Scenario
                     </Button>
                 </form>
-                <Button onClick={() => scenarioForm.handleSubmit(onScenarioSubmit)()} className="w-full group-data-[collapsible=icon]:block hidden" size="icon" disabled={isScenarioLoading || !currentUser}>
-                    {isScenarioLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "G"}
-                </Button>
+                 <div className="group-data-[collapsible=icon]:block hidden">
+                    <Button onClick={() => scenarioForm.handleSubmit(onScenarioSubmit)()} className="w-full" size="icon" disabled={isScenarioLoading || !currentUser || !activePatient}>
+                        {isScenarioLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "G"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center mt-1">Generate</p>
+                </div>
                 </CardContent>
             </Card>
             </TabsContent>
@@ -269,9 +280,12 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
                     Simulate
                     </Button>
                 </form>
-                <Button onClick={() => comorbidityForm.handleSubmit(onComorbiditySubmit)()} className="w-full group-data-[collapsible=icon]:block hidden" size="icon" disabled={isComorbidityLoading}>
-                    {isComorbidityLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "S"}
-                </Button>
+                <div className="group-data-[collapsible=icon]:block hidden">
+                    <Button onClick={() => comorbidityForm.handleSubmit(onComorbiditySubmit)()} className="w-full" size="icon" disabled={isComorbidityLoading}>
+                        {isComorbidityLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "S"}
+                    </Button>
+                     <p className="text-xs text-muted-foreground text-center mt-1">Simulate</p>
+                </div>
 
                 {comorbidityResult && (
                     <div className="mt-4 p-3 rounded-md bg-muted group-data-[collapsible=icon]:hidden">

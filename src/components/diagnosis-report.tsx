@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
 import type { PatientDiagnosisOutput } from '@/ai/schemas/patient-diagnosis';
-import type { User } from '@/components/user-switcher';
+import type { User } from '@/hooks/use-user-store.tsx';
 import { handleDiagnosePatient } from '@/app/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,10 +13,11 @@ import { useToast } from '@/hooks/use-toast';
 
 type DiagnosisReportProps = {
   doctor: User;
+  patientRecords?: string; // Content from patient-uploaded file
   scenario: GeneratePersonalizedScenarioOutput;
 };
 
-export default function DiagnosisReport({ doctor, scenario }: DiagnosisReportProps) {
+export default function DiagnosisReport({ doctor, patientRecords, scenario }: DiagnosisReportProps) {
   const [diagnosis, setDiagnosis] = useState<PatientDiagnosisOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function DiagnosisReport({ doctor, scenario }: DiagnosisReportPro
       scenarioDescription: scenario.scenarioDescription,
       learningObjectives: scenario.learningObjectives,
       comorbidities: scenario.comorbidities,
-      uploadedMedicalRecords: doctor.medicalRecords,
+      uploadedMedicalRecords: patientRecords,
     });
     setIsLoading(false);
 
@@ -58,7 +60,7 @@ export default function DiagnosisReport({ doctor, scenario }: DiagnosisReportPro
       getDiagnosis();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [doctor, scenario]);
+  }, [doctor, scenario, patientRecords]);
 
   return (
     <Card className="bg-muted/50 border-border/50">
