@@ -11,9 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { SimuPatientLogo } from '@/components/icons';
+import { MedizoAiLogo } from '@/components/icons';
 import { Loader2 } from 'lucide-react';
-import { useUserStore } from '@/hooks/use-user-store';
+import { useUserStore } from '@/hooks/use-user-store.tsx';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -59,10 +59,10 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-                <SimuPatientLogo className="h-12 w-12"/>
+                <MedizoAiLogo className="h-16 w-16"/>
             </div>
-          <CardTitle className="text-2xl font-headline">SimuPatient Login</CardTitle>
-          <CardDescription>Enter your credentials to access the dashboard</CardDescription>
+          <CardTitle className="text-2xl font-headline">Medizo AI Login</CardTitle>
+          <CardDescription>Enter your credentials to access the simulation</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

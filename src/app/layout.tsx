@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AppProviders } from '@/components/app-providers';
 
 export const metadata: Metadata = {
-  title: 'SimuPatient - AI Patient Simulator',
+  title: 'Medizo AI - Patient Simulator',
   description: 'AI-powered patient simulator for advanced medical training.',
 };
 

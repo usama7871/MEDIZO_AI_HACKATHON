@@ -4,75 +4,75 @@
 
 @layer base {
   :root {
-    --background: 224 71% 4%;
+    --background: 230 25% 12%; /* Deep Indigo */
     --foreground: 210 40% 98%;
-    --card: 224 71% 10%;
+    --card: 230 25% 16%;
     --card-foreground: 210 40% 98%;
-    --popover: 224 71% 4%;
+    --popover: 230 25% 12%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 100% 50%; /* Bright Blue */
-    --primary-foreground: 224 71% 14%;
-    --secondary: 215 28% 17%;
+    --primary: 180 100% 50%; /* Vibrant Cyan */
+    --primary-foreground: 230 25% 12%;
+    --secondary: 230 20% 25%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 215 28% 17%;
-    --muted-foreground: 216 12% 74%;
-    --accent: 0 84.2% 60.2%; /* Red */
+    --muted: 230 20% 25%;
+    --muted-foreground: 220 15% 65%;
+    --accent: 320 100% 60%; /* Electric Magenta */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    --border: 215 28% 25%;
-    --input: 215 28% 25%;
-    --ring: 210 100% 50%; /* Bright Blue */
-    --chart-1: 0 84.2% 60.2%; /* Red for Heart Rate */
-    --chart-2: 210 100% 50%; /* Bright Blue for BP */
-    --chart-3: 180 80% 50%; /* Cyan for SpO2 */
+    --border: 230 20% 30%;
+    --input: 230 20% 30%;
+    --ring: 180 100% 50%; /* Vibrant Cyan */
+    --chart-1: 180 100% 50%; /* Cyan for Heart Rate */
+    --chart-2: 320 100% 60%; /* Magenta for BP */
+    --chart-3: 210 100% 50%; /* Blue for SpO2 */
     --chart-4: 50 100% 50%; /* Yellow for Respiration */
     --chart-5: 340 80% 60%;
     --radius: 0.5rem;
-    --sidebar-background: 224 71% 8%;
+    --sidebar-background: 230 25% 14%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 224 71% 14%;
-    --sidebar-accent: 215 28% 17%;
+    --sidebar-primary: 180 100% 50%;
+    --sidebar-primary-foreground: 230 25% 12%;
+    --sidebar-accent: 230 20% 25%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 28% 20%;
-    --sidebar-ring: 210 40% 98%;
+    --sidebar-border: 230 20% 30%;
+    --sidebar-ring: 180 100% 50%;
   }
 
   .dark {
-    --background: 224 71% 4%;
+    --background: 230 25% 12%; /* Deep Indigo */
     --foreground: 210 40% 98%;
-    --card: 224 71% 10%;
+    --card: 230 25% 16%;
     --card-foreground: 210 40% 98%;
-    --popover: 224 71% 4%;
+    --popover: 230 25% 12%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 100% 50%; /* Bright Blue */
-    --primary-foreground: 224 71% 14%;
-    --secondary: 215 28% 17%;
+    --primary: 180 100% 50%; /* Vibrant Cyan */
+    --primary-foreground: 230 25% 12%;
+    --secondary: 230 20% 25%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 215 28% 17%;
-    --muted-foreground: 216 12% 74%;
-    --accent: 0 84.2% 60.2%; /* Red */
+    --muted: 230 20% 25%;
+    --muted-foreground: 220 15% 65%;
+    --accent: 320 100% 60%; /* Electric Magenta */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 210 40% 98%;
-    --border: 215 28% 25%;
-    --input: 215 28% 25%;
-    --ring: 210 100% 50%; /* Bright Blue */
-    --chart-1: 0 84.2% 60.2%; /* Red for Heart Rate */
-    --chart-2: 210 100% 50%; /* Bright Blue for BP */
-    --chart-3: 180 80% 50%; /* Cyan for SpO2 */
+    --border: 230 20% 30%;
+    --input: 230 20% 30%;
+    --ring: 180 100% 50%; /* Vibrant Cyan */
+    --chart-1: 180 100% 50%; /* Cyan for Heart Rate */
+    --chart-2: 320 100% 60%; /* Magenta for BP */
+    --chart-3: 210 100% 50%; /* Blue for SpO2 */
     --chart-4: 50 100% 50%; /* Yellow for Respiration */
     --chart-5: 340 80% 60%;
     --radius: 0.5rem;
-    --sidebar-background: 224 71% 8%;
+    --sidebar-background: 230 25% 14%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 224 71% 14%;
-    --sidebar-accent: 215 28% 17%;
+    --sidebar-primary: 180 100% 50%;
+    --sidebar-primary-foreground: 230 25% 12%;
+    --sidebar-accent: 230 20% 25%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 28% 20%;
-    --sidebar-ring: 210 40% 98%;
+    --sidebar-border: 230 20% 30%;
+    --sidebar-ring: 180 100% 50%;
   }
 }
 

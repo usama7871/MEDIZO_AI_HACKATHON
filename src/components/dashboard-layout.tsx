@@ -10,7 +10,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "./ui/button";
-import { SimuPatientLogo } from "@/components/icons";
+import { MedizoAiLogo } from "@/components/icons";
 import { PanelLeft } from "lucide-react";
 
 type DashboardLayoutProps = {
@@ -28,8 +28,8 @@ export default function DashboardLayout({ children, sidebarContent }: DashboardL
         <Sidebar collapsible="icon" className="group-data-[collapsible=icon]:-translate-x-0 !w-64 group-data-[collapsible=icon]:!w-14 transition-all duration-300 ease-in-out z-20">
           <SidebarHeader className="flex items-center justify-between p-4">
             <div className="flex items-center gap-2">
-              <SimuPatientLogo />
-              <span className="font-semibold text-lg text-primary group-data-[collapsible=icon]:hidden">SimuPatient</span>
+              <MedizoAiLogo />
+              <span className="font-semibold text-lg text-primary group-data-[collapsible=icon]:hidden font-headline">Medizo AI</span>
             </div>
           </SidebarHeader>
           <SidebarContent>
