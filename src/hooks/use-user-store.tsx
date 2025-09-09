@@ -17,8 +17,8 @@ export type User = {
 
 // In a real app, this would come from a database.
 const initialUsers: User[] = [
-  { id: 'admin-001', name: 'Admin', email: 'admin@simupatient.com', avatar: '', specialty: 'System Administration', role: 'admin', password: 'password123' },
-  { id: 'doc-001', name: 'Dr. Evelyn Reed', email: 'e.reed@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', specialty: 'Cardiology', medicalRecords: 'Specializes in interventional cardiology. Research focus on acute coronary syndromes.', role: 'doctor', password: 'password123', patientIds: ['pat-smith-001'] },
+  { id: 'admin-001', name: 'Admin', email: 'admin@simupatient.com', avatar: 'https://i.pravatar.cc/150?u=admin', specialty: 'System Administration', role: 'admin', password: 'password123' },
+  { id: 'doc-001', name: 'Dr. Evelyn Reed', email: 'e.reed@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d', specialty: 'Cardiology', medicalRecords: 'Specializes in interventional cardiology. Research focus on acute coronary syndromes.', role: 'doctor', password: 'password123', patientIds: ['pat-001'] },
   { id: 'doc-002', name: 'Dr. Kenji Tanaka', email: 'k.tanaka@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705d', specialty: 'Neurology', medicalRecords: 'Focus on stroke and neurocritical care. Published papers on ischemic stroke management.', role: 'doctor', password: 'password123', patientIds: [] },
   { id: 'doc-003', name: 'Dr. Aisha Khan', email: 'a.khan@med.edu', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026706d', specialty: 'Pediatrics', medicalRecords: 'Pediatric emergency medicine fellow. Interested in sepsis and respiratory distress in children.', role: 'doctor', password: 'password123', patientIds: [] },
   { id: 'pat-001', name: 'John Smith (Patient)', email: 'j.smith@email.com', avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026707d', specialty: 'N/A', medicalRecords: 'History of hypertension.', role: 'patient', password: 'password123' },
@@ -33,6 +33,7 @@ type UserStore = {
   allUsers: User[];
   setAllUsers: (users: User[]) => void;
   addUser: (user: User) => void;
+  isInitialized: boolean;
 };
 
 const UserContext = createContext<UserStore | null>(null);
@@ -61,8 +62,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
         console.error("Failed to initialize user state from localStorage", error);
         setAllUsersState(initialUsers); // Reset on error
+    } finally {
+        setIsInitialized(true);
     }
-    setIsInitialized(true);
   }, []);
 
   // Persist allUsers to localStorage whenever it changes
@@ -78,6 +80,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       setCurrentUserState(user);
       localStorage.setItem('user', JSON.stringify(user));
+    } else {
+        console.error(`User with ID ${userId} not found.`);
+        // Handle case where user is not found, maybe log out
+        logout();
     }
   }, [allUsers]);
   
@@ -107,7 +113,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
   
   return (
-    <UserContext.Provider value={{ currentUser, setCurrentUser, logout, allUsers, setAllUsers, addUser, updateUser }}>
+    <UserContext.Provider value={{ currentUser, setCurrentUser, logout, allUsers, setAllUsers, addUser, updateUser, isInitialized }}>
       {children}
     </UserContext.Provider>
   );

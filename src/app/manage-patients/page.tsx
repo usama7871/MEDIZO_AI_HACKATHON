@@ -10,20 +10,30 @@ import { Loader2, UserPlus, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PatientList from '@/components/patient-list';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function ManagePatientsPage() {
-  const { currentUser } = useUserStore();
+  const { currentUser, isInitialized } = useUserStore();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!currentUser) {
-      router.push('/login');
-    } else if (currentUser.role !== 'doctor') {
-      router.push('/');
+    if (isInitialized) {
+        if (!currentUser) {
+          router.push('/login');
+        } else if (currentUser.role !== 'doctor') {
+            toast({
+                variant: 'destructive',
+                title: 'Unauthorized',
+                description: 'You do not have permission to manage patients.',
+            });
+            router.push('/');
+        }
     }
-  }, [currentUser, router]);
+  }, [currentUser, router, isInitialized, toast]);
 
-  if (!currentUser || currentUser.role !== 'doctor') {
+  if (!isInitialized || !currentUser || currentUser.role !== 'doctor') {
     return (
       <DashboardLayout sidebarContent={null}>
         <main className="flex h-screen w-full items-center justify-center">

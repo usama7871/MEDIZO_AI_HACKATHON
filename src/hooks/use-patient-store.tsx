@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
-import { useUserStore } from './use-user-store.tsx';
+import { useUserStore } from './use-user-store';
 
 export type Patient = {
   id: string; // This ID will match the corresponding User ID for the patient
@@ -40,11 +40,11 @@ const initialPatients: Patient[] = [
 
 type PatientStore = {
   patients: Patient[];
-  setPatients: (patients: Patient[]) => void;
   addPatient: (patient: Patient) => void;
   updatePatient: (patient: Patient) => void;
   activePatient: Patient | null;
   setActivePatient: (patientId: string | null) => void;
+  isInitialized: boolean;
 };
 
 const PatientContext = createContext<PatientStore | null>(null);
@@ -53,7 +53,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   const [patients, setPatientsState] = useState<Patient[]>([]);
   const [activePatient, setActivePatientState] = useState<Patient | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { currentUser } = useUserStore();
+  const { currentUser, isInitialized: userIsInitialized } = useUserStore();
 
   useEffect(() => {
     try {
@@ -67,8 +67,9 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("Failed to parse patients from localStorage", error);
       setPatientsState(initialPatients);
+    } finally {
+        setIsInitialized(true);
     }
-    setIsInitialized(true);
   }, []);
 
   useEffect(() => {
@@ -76,17 +77,14 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('patients', JSON.stringify(patients));
     }
   }, [patients, isInitialized]);
-
-  const setPatients = (newPatients: Patient[]) => {
-    setPatientsState(newPatients);
-  };
   
   const addPatient = (patient: Patient) => {
     setPatientsState(prev => [...prev, patient]);
   };
 
   const updatePatient = (updatedPatient: Patient) => {
-    setPatientsState(prev => prev.map(p => p.id === updatedPatient.id ? updatedPatient : p));
+    const newPatients = patients.map(p => p.id === updatedPatient.id ? updatedPatient : p);
+    setPatientsState(newPatients);
     if (activePatient?.id === updatedPatient.id) {
         setActivePatientState(updatedPatient);
     }
@@ -104,13 +102,15 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     const patient = patients.find(p => p.id === patientId);
     if (patient) {
       setActivePatientState(patient);
-      localStorage.setItem(`activePatient_${patient.doctorId}`, patient.id);
+      if (currentUser) {
+        localStorage.setItem(`activePatient_${currentUser.id}`, patient.id);
+      }
     }
   }, [patients, currentUser]);
   
   // Effect to load the active patient for the current user on startup
   useEffect(() => {
-    if (isInitialized && currentUser) {
+    if (isInitialized && userIsInitialized && currentUser) {
         if (currentUser.role === 'doctor') {
             const activeId = localStorage.getItem(`activePatient_${currentUser.id}`);
             if (activeId) {
@@ -119,11 +119,11 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
             }
         }
     }
-  }, [isInitialized, currentUser, patients]);
+  }, [isInitialized, userIsInitialized, currentUser, patients]);
 
 
   return (
-    <PatientContext.Provider value={{ patients, setPatients, addPatient, updatePatient, activePatient, setActivePatient }}>
+    <PatientContext.Provider value={{ patients, addPatient, updatePatient, activePatient, setActivePatient, isInitialized }}>
       {children}
     </PatientContext.Provider>
   );

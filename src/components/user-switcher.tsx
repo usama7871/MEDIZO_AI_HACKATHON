@@ -21,7 +21,8 @@ export default function UserSwitcher() {
 
   const handleUserSelect = (userId: string) => {
     setCurrentUser(userId);
-    window.location.reload(); 
+    // Use a full page reload to ensure all state is reset correctly
+    window.location.href = '/'; 
   };
 
   const handleLogout = () => {
@@ -33,13 +34,10 @@ export default function UserSwitcher() {
       return null;
   }
 
-  // Filter users that can be switched to. Admins can see all, doctors see other doctors.
-  const switchableUsers = allUsers.filter(u => {
-      if (currentUser.role === 'admin') return u.id !== currentUser.id;
-      // You might want to let doctors switch to other doctors for consults, or not.
-      // For now, let's keep it simple: only admins can switch freely.
-      return false;
-  })
+  // Only admins can switch users
+  const switchableUsers = currentUser.role === 'admin' 
+    ? allUsers.filter(u => u.id !== currentUser.id)
+    : [];
 
   return (
     <DropdownMenu>

@@ -15,25 +15,17 @@ import { useUserStore } from '@/hooks/use-user-store.tsx';
 import { usePatientStore } from '@/hooks/use-patient-store.tsx';
 
 export default function Home() {
-  const { currentUser } = useUserStore();
-  const { activePatient, setActivePatient } = usePatientStore();
+  const { currentUser, isInitialized: userIsInitialized } = useUserStore();
+  const { activePatient, isInitialized: patientIsInitialized } = usePatientStore();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+
+  const isLoading = !userIsInitialized || !patientIsInitialized;
 
   useEffect(() => {
-    setIsLoading(true);
-    if (!currentUser) {
+    if (!isLoading && !currentUser) {
       router.push('/login');
-    } else {
-      if (currentUser.role === 'doctor' && !activePatient) {
-        const storedActivePatientId = localStorage.getItem(`activePatient_${currentUser.id}`);
-        if(storedActivePatientId) {
-            setActivePatient(storedActivePatientId);
-        }
-      }
-      setIsLoading(false);
     }
-  }, [currentUser, router, activePatient, setActivePatient]);
+  }, [currentUser, isLoading, router]);
 
   const MainContent = () => {
     if (isLoading) {
@@ -43,8 +35,14 @@ export default function Home() {
         </div>
       );
     }
+    
+    if (!currentUser) {
+      // This will be briefly visible before the useEffect above redirects
+      return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+    }
 
-    if (currentUser?.role === 'doctor' && !activePatient) {
+
+    if (currentUser.role === 'doctor' && !activePatient) {
       return (
         <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
             <ShieldAlert className="h-12 w-12 text-accent mb-4" />
@@ -61,7 +59,7 @@ export default function Home() {
       )
     }
 
-    if (activePatient && currentUser?.role === 'doctor') {
+    if (activePatient && currentUser.role === 'doctor') {
       return (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-3">
@@ -77,7 +75,7 @@ export default function Home() {
       );
     }
 
-    if (currentUser?.role === 'patient') {
+    if (currentUser.role === 'patient') {
          return (
              <Card className="w-full max-w-2xl bg-card/80">
                  <CardHeader>
@@ -105,10 +103,10 @@ export default function Home() {
     return (
         <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
         <CardTitle className="text-2xl font-headline">
-            Welcome, {currentUser?.name}
+            Welcome, {currentUser.name}
         </CardTitle>
         <CardDescription className="mt-2">
-            {currentUser?.role === 'admin' ? 'You have administrative access. You can manage doctors from the sidebar.' : 'Your dashboard view.'}
+            {currentUser.role === 'admin' ? 'You have administrative access. You can manage doctors from the sidebar.' : 'Your dashboard view.'}
         </CardDescription>
       </Card>
     )
@@ -119,7 +117,7 @@ export default function Home() {
       sidebarContent={<ScenarioControls onScenarioGenerated={() => {}} />}
     >
       <main className="flex-1 flex items-center justify-center p-4 md:p-6 lg:p-8">
-        {MainContent()}
+        <MainContent />
       </main>
     </DashboardLayout>
   );

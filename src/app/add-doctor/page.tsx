@@ -28,23 +28,25 @@ const doctorSchema = z.object({
 type DoctorFormValues = z.infer<typeof doctorSchema>;
 
 export default function AddDoctorPage() {
-  const { currentUser, addUser, allUsers } = useUserStore();
+  const { currentUser, addUser, allUsers, isInitialized } = useUserStore();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
    useEffect(() => {
-    if (!currentUser) {
-      router.push('/login');
-    } else if (currentUser.role !== 'admin') {
-      toast({
-        variant: 'destructive',
-        title: 'Unauthorized',
-        description: 'You do not have permission to add doctors.',
-      });
-      router.push('/');
+    if (isInitialized) {
+        if (!currentUser) {
+          router.push('/login');
+        } else if (currentUser.role !== 'admin') {
+          toast({
+            variant: 'destructive',
+            title: 'Unauthorized',
+            description: 'You do not have permission to add doctors.',
+          });
+          router.push('/');
+        }
     }
-  }, [currentUser, router, toast]);
+  }, [currentUser, router, toast, isInitialized]);
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<DoctorFormValues>({
     resolver: zodResolver(doctorSchema),
@@ -78,7 +80,7 @@ export default function AddDoctorPage() {
     router.push('/'); // Or redirect to a doctor management page
   };
   
-  if (!currentUser || currentUser.role !== 'admin') {
+  if (!isInitialized || !currentUser || currentUser.role !== 'admin') {
       return (
         <DashboardLayout sidebarContent={null}>
             <div className="flex items-center justify-center min-h-screen">
@@ -115,7 +117,7 @@ export default function AddDoctorPage() {
                         </div>
                          <div>
                             <Label htmlFor="specialty">Specialty</Label>
-                             <Select onValueChange={(value) => setValue('specialty', value)} >
+                             <Select onValueChange={(value) => setValue('specialty', value, { shouldValidate: true })} >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a specialty" />
                                 </SelectTrigger>
