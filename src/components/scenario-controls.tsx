@@ -41,7 +41,7 @@ type ScenarioControlsProps = {
 };
 
 export default function ScenarioControls({ onScenarioGenerated }: ScenarioControlsProps) {
-  const { currentUser, updateUser } = useUserStore();
+  const { currentUser, updateUser, allUsers } = useUserStore();
   const { activePatient, updatePatient } = usePatientStore();
   const { toast } = useToast();
   const router = useRouter();
@@ -72,7 +72,7 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
     // This effect ensures the form has the latest medical records
     // from the active patient context for scenario generation.
     if (activePatient) {
-        const patientUser = useUserStore.getState().allUsers.find(u => u.id === activePatient.id);
+        const patientUser = allUsers.find(u => u.id === activePatient.id);
         const combinedRecords = [
             activePatient.history,
             patientUser?.medicalRecords // Records uploaded by the patient user
@@ -82,7 +82,7 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
         // Fallback to current user's records if no patient is active
         scenarioForm.setValue('medicalRecords', currentUser.medicalRecords || '');
     }
-  }, [activePatient, currentUser, scenarioForm]);
+  }, [activePatient, currentUser, allUsers, scenarioForm]);
 
 
   const onScenarioSubmit: SubmitHandler<ScenarioFormValues> = async (data) => {
