@@ -46,7 +46,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
         const storedUsers = localStorage.getItem('allUsers');
-        const users = storedUsers ? JSON.parse(storedUsers) : initialUsers;
+        let users;
+        if (storedUsers) {
+            users = JSON.parse(storedUsers);
+        } else {
+            // If nothing in storage, initialize with default data
+            users = initialUsers;
+            localStorage.setItem('allUsers', JSON.stringify(users));
+        }
         setAllUsersState(users);
         
         const storedUser = localStorage.getItem('user');

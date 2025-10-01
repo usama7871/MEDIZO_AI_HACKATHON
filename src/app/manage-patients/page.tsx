@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/dashboard-layout';
 import ScenarioControls from '@/components/scenario-controls';
-import { useUserStore } from '@/hooks/use-user-store';
+import { useUserStore } from '@/hooks/use-user-store.tsx';
 import { Loader2, UserPlus, PlusCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

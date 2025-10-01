@@ -15,7 +15,7 @@ import { useUserStore } from '@/hooks/use-user-store.tsx';
 import { usePatientStore } from '@/hooks/use-patient-store.tsx';
 
 export default function Home() {
-  const { currentUser, isInitialized: userIsInitialized } = useUserStore();
+  const { currentUser, isInitialized: userIsInitialized, allUsers } = useUserStore();
   const { activePatient, isInitialized: patientIsInitialized } = usePatientStore();
   const router = useRouter();
 
@@ -99,16 +99,41 @@ export default function Home() {
          )
     }
 
-    // Fallback for admin or other roles without a patient view
+    if (currentUser.role === 'admin') {
+      const doctorCount = allUsers.filter(u => u.role === 'doctor').length;
+      const patientCount = allUsers.filter(u => u.role === 'patient').length;
+       return (
+        <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
+            <CardTitle className="text-2xl font-headline">
+                Welcome, Administrator
+            </CardTitle>
+            <CardDescription className="mt-2">
+                You have administrative access to the Medizo AI system.
+            </CardDescription>
+            <CardContent className="mt-6 text-left">
+                <p className="text-lg">System Status:</p>
+                <ul className="list-disc list-inside mt-2 text-muted-foreground">
+                    <li><span className="font-bold text-foreground">{doctorCount}</span> Doctors Registered</li>
+                    <li><span className="font-bold text-foreground">{patientCount}</span> Patient Profiles</li>
+                </ul>
+            </CardContent>
+            <CardFooter>
+                 <Button onClick={() => router.push('/add-doctor')}>Add New Doctor</Button>
+            </CardFooter>
+        </Card>
+       )
+    }
+
+    // Fallback for any other unexpected roles
     return (
         <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
-        <CardTitle className="text-2xl font-headline">
-            Welcome, {currentUser.name}
-        </CardTitle>
-        <CardDescription className="mt-2">
-            {currentUser.role === 'admin' ? 'You have administrative access. You can manage doctors from the sidebar.' : 'Your dashboard view.'}
-        </CardDescription>
-      </Card>
+            <CardTitle className="text-2xl font-headline">
+                Welcome, {currentUser.name}
+            </CardTitle>
+            <CardDescription className="mt-2">
+                Your dashboard is ready.
+            </CardDescription>
+        </Card>
     )
   }
 

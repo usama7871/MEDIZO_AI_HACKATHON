@@ -62,25 +62,22 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
   });
 
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser?.role === 'doctor' && currentUser.specialty) {
       scenarioForm.setValue('studentId', currentUser.id);
       scenarioForm.setValue('specialty', currentUser.specialty);
     }
   }, [currentUser, scenarioForm]);
 
   useEffect(() => {
-    // This effect ensures the form has the latest medical records
-    // from the active patient context for scenario generation.
     if (activePatient) {
         const patientUser = allUsers.find(u => u.id === activePatient.id);
         const combinedRecords = [
             activePatient.history,
-            patientUser?.medicalRecords // Records uploaded by the patient user
+            patientUser?.medicalRecords
         ].filter(Boolean).join('\n\n--- UPLOADED RECORDS ---\n');
         scenarioForm.setValue('medicalRecords', combinedRecords);
-    } else if (currentUser) {
-        // Fallback to current user's records if no patient is active
-        scenarioForm.setValue('medicalRecords', currentUser.medicalRecords || '');
+    } else if (currentUser?.role === 'doctor') {
+        scenarioForm.setValue('medicalRecords', '');
     }
   }, [activePatient, currentUser, allUsers, scenarioForm]);
 
@@ -99,7 +96,6 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
 
     if (result.success && result.data) {
       toast({ title: 'New Scenario Generated', description: `Scenario updated for ${activePatient.name}.` });
-      // Update the active patient's scenario in the global state
       updatePatient({ ...activePatient, scenario: result.data });
       onScenarioGenerated(result.data);
     } else {
@@ -124,8 +120,9 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
 
     if (result.success && result.data) {
       toast({ title: 'File Uploaded', description: `${file.name} has been processed.` });
-      // Update the current user's record in the global state
-      updateUser({ ...currentUser, medicalRecords: (currentUser.medicalRecords ? currentUser.medicalRecords + '\n\n' : '') + `--- UPLOADED ${new Date().toISOString()} ---\n` + result.data.recordContent });
+      const recordHeader = `--- UPLOADED BY PATIENT (${new Date().toLocaleDateString()}) ---\n`;
+      const newRecords = recordHeader + result.data.recordContent;
+      updateUser({ ...currentUser, medicalRecords: (currentUser.medicalRecords ? currentUser.medicalRecords + '\n\n' : '') + newRecords });
     } else {
       toast({ variant: 'destructive', title: 'Upload Failed', description: result.error });
     }
@@ -163,7 +160,7 @@ export default function ScenarioControls({ onScenarioGenerated }: ScenarioContro
       </div>
       <Separator className="my-2 bg-sidebar-border/50" />
        
-       {(currentUser.role === 'doctor' || currentUser.role === 'patient') && (
+       {currentUser.role === 'patient' && (
          <>
             <div className="p-2 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center">
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".txt,.md,.pdf" />

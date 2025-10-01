@@ -33,24 +33,26 @@ const patientSchema = z.object({
 type PatientFormValues = z.infer<typeof patientSchema>;
 
 export default function AddPatientPage() {
-  const { currentUser, addUser, allUsers, updateUser } = useUserStore();
+  const { currentUser, addUser, allUsers, updateUser, isInitialized } = useUserStore();
   const { addPatient } = usePatientStore();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!currentUser) {
-      router.push('/login');
-    } else if (currentUser.role !== 'doctor') {
-      toast({
-        variant: 'destructive',
-        title: 'Unauthorized',
-        description: 'You do not have permission to add patients.',
-      });
-      router.push('/');
+    if (isInitialized) {
+        if (!currentUser) {
+          router.push('/login');
+        } else if (currentUser.role !== 'doctor') {
+          toast({
+            variant: 'destructive',
+            title: 'Unauthorized',
+            description: 'You do not have permission to add patients.',
+          });
+          router.push('/');
+        }
     }
-  }, [currentUser, router, toast]);
+  }, [currentUser, router, toast, isInitialized]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
@@ -116,7 +118,7 @@ export default function AddPatientPage() {
     router.push('/manage-patients');
   };
   
-  if (!currentUser || currentUser.role !== 'doctor') {
+  if (!isInitialized || !currentUser || currentUser.role !== 'doctor') {
       return (
         <DashboardLayout sidebarContent={null}>
             <div className="flex items-center justify-center min-h-screen">

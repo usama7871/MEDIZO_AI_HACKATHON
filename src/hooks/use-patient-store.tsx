@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { GeneratePersonalizedScenarioOutput } from '@/ai/flows/generate-personalized-scenario';
-import { useUserStore } from './use-user-store.tsx';
+import { useUserStore } from './use-user-store';
 
 export type Patient = {
   id: string; // This ID will match the corresponding User ID for the patient
@@ -53,7 +53,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   const [patients, setPatientsState] = useState<Patient[]>([]);
   const [activePatient, setActivePatientState] = useState<Patient | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { currentUser, isInitialized: userIsInitialized } = useUserStore();
+  const userStore = useUserStore();
 
   useEffect(() => {
     try {
@@ -61,7 +61,9 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
       if (storedPatients) {
         setPatientsState(JSON.parse(storedPatients));
       } else {
+        // If nothing in storage, initialize with default data
         setPatientsState(initialPatients);
+        localStorage.setItem('patients', JSON.stringify(initialPatients));
       }
     } catch (error) {
       console.error("Failed to parse patients from localStorage", error);
@@ -90,6 +92,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
   }
 
   const setActivePatient = useCallback((patientId: string | null) => {
+    const currentUser = userStore.currentUser;
     if (patientId === null) {
       setActivePatientState(null);
       if (currentUser) {
@@ -105,20 +108,20 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem(`activePatient_${currentUser.id}`, patient.id);
       }
     }
-  }, [patients, currentUser]);
+  }, [patients, userStore.currentUser]);
   
   // Effect to load the active patient for the current user on startup
   useEffect(() => {
-    if (isInitialized && userIsInitialized && currentUser) {
-        if (currentUser.role === 'doctor') {
-            const activeId = localStorage.getItem(`activePatient_${currentUser.id}`);
+    if (isInitialized && userStore.isInitialized && userStore.currentUser) {
+        if (userStore.currentUser.role === 'doctor') {
+            const activeId = localStorage.getItem(`activePatient_${userStore.currentUser.id}`);
             if (activeId) {
                 const patient = patients.find(p => p.id === activeId);
                 setActivePatientState(patient || null);
             }
         }
     }
-  }, [isInitialized, userIsInitialized, currentUser, patients]);
+  }, [isInitialized, userStore.isInitialized, userStore.currentUser, patients]);
 
 
   return (
