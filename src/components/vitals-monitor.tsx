@@ -8,11 +8,11 @@ import { HeartPulse, Gauge, Wind, Waves } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // --- Constants ---
-const VITAL_DATA_LENGTH = 150;
-const TICK_RATE_MS = 50;
+const VITAL_DATA_LENGTH = 150; // Number of data points to display
+const TICK_RATE_MS = 100; // Update interval for simulation
 
-// --- Waveform Patterns ---
-const createEcgPattern = () => [0,0,0,0.1,0.2,0.1,0,-0.5,2.8,-1.5,0.3,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+// --- Waveform Patterns (as simple arrays of numbers) ---
+const createEcgPattern = () => [0,0,0,0.1,0.2,0.1,0,-0.5,2.8,-1.5,0.3,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 const createBpPattern = () => [0.7,0.8,0.9,1,0.95,0.85,0.8,0.75,0.78,0.72,0.6,0.5,0.4,0.3,0.2,0.2,0.3,0.4,0.5,0.6];
 const createRespPattern = () => Array.from({ length: 40 }, (_, i) => (Math.sin((i / 39) * Math.PI) * 0.8) + 0.1);
 const createSpo2Pattern = () => [0.5,0.6,0.8,0.95,1,0.9,0.7,0.6,0.55,0.52,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5];
@@ -33,7 +33,7 @@ const getVitalParams = (condition: string) => {
             hr: { base: 110, fluctuation: 1.5, speed: 2.5, yDomain: [50, 150] },
             bp: { base: 95, fluctuation: 2.5, speed: 2.5, yDomain: [70, 130] },
             spo2: { base: 93, fluctuation: 0.5, speed: 2.5, yDomain: [85, 100] },
-            resp: { base: 24, fluctuation: 1, speed: 1, yDomain: [10, 35] },
+            resp: { base: 24, fluctuation: 1, speed: 1.2, yDomain: [10, 35] },
         };
     } else if (lowerCaseCondition.includes('sepsis')) {
         params = {
@@ -49,15 +49,12 @@ const getVitalParams = (condition: string) => {
 }
 
 // --- Custom Hook for Vital Sign Simulation ---
-const useVitalSign = (baseValue: number, fluctuation: number, pattern: number[], speed: number, isClient: boolean) => {
+const useVitalSign = (baseValue: number, fluctuation: number, pattern: number[], speed: number) => {
     const [data, setData] = useState<number[]>([]);
     const patternIndexRef = useRef(0);
 
     useEffect(() => {
-        if (!isClient) return;
-
         setData(Array(VITAL_DATA_LENGTH).fill(baseValue));
-        
         const interval = setInterval(() => {
             const patternValue = pattern[patternIndexRef.current];
             const noise = (Math.random() - 0.5) * fluctuation;
@@ -68,7 +65,8 @@ const useVitalSign = (baseValue: number, fluctuation: number, pattern: number[],
         }, TICK_RATE_MS * (1 / speed));
 
         return () => clearInterval(interval);
-    }, [baseValue, fluctuation, pattern, speed, isClient]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [baseValue, fluctuation, speed]); // pattern is stable
 
     return data;
 };
@@ -125,13 +123,21 @@ const VitalChart = ({ title, unit, data, color, Icon, yDomain }: { title: string
     );
 };
 
-// --- Main Vitals Monitor Component ---
-export default function VitalsMonitor({ patient }: { patient: Patient }) {
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+export type Vitals = {
+    hr: number;
+    bp: number;
+    spo2: number;
+    resp: number;
+};
 
+type VitalsMonitorProps = {
+  patient: Patient;
+  onVitalsChange: (vitals: Vitals) => void;
+};
+
+
+// --- Main Vitals Monitor Component ---
+export default function VitalsMonitor({ patient, onVitalsChange }: VitalsMonitorProps) {
   const { hr, bp, spo2, resp } = useMemo(() => getVitalParams(patient.primaryCondition), [patient.primaryCondition]);
   
   const ecgPattern = useMemo(() => createEcgPattern(), []);
@@ -139,10 +145,24 @@ export default function VitalsMonitor({ patient }: { patient: Patient }) {
   const respPattern = useMemo(() => createRespPattern(), []);
   const spo2Pattern = useMemo(() => createSpo2Pattern(), []);
 
-  const hrData = useVitalSign(hr.base, hr.fluctuation, ecgPattern, hr.speed, isClient);
-  const bpData = useVitalSign(bp.base, bp.fluctuation, bpPattern, bp.speed, isClient);
-  const spo2Data = useVitalSign(spo2.base, spo2.fluctuation, spo2Pattern, spo2.speed, isClient);
-  const respData = useVitalSign(resp.base, resp.fluctuation, respPattern, resp.speed, isClient);
+  const hrData = useVitalSign(hr.base, hr.fluctuation, ecgPattern, hr.speed);
+  const bpData = useVitalSign(bp.base, bp.fluctuation, bpPattern, bp.speed);
+  const spo2Data = useVitalSign(spo2.base, spo2.fluctuation, spo2Pattern, spo2.speed);
+  const respData = useVitalSign(resp.base, resp.fluctuation, respPattern, resp.speed);
+
+  // Effect to report vitals up to the parent component
+  useEffect(() => {
+    const interval = setInterval(() => {
+      onVitalsChange({
+        hr: hrData[hrData.length - 1] || hr.base,
+        bp: bpData[bpData.length - 1] || bp.base,
+        spo2: spo2Data[spo2Data.length - 1] || spo2.base,
+        resp: respData[respData.length - 1] || resp.base,
+      });
+    }, 1000); // Report every second
+    return () => clearInterval(interval);
+  }, [onVitalsChange, hrData, bpData, spo2Data, respData, hr.base, bp.base, spo2.base, resp.base]);
+
 
   return (
     <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20 h-full">
@@ -161,3 +181,4 @@ export default function VitalsMonitor({ patient }: { patient: Patient }) {
     </Card>
   );
 }
+

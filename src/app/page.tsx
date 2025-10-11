@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ShieldAlert, FileText } from 'lucide-react';
 import DashboardLayout from '@/components/dashboard-layout';
@@ -13,11 +13,14 @@ import { Card, CardDescription, CardTitle, CardFooter, CardHeader, CardContent }
 import { Button } from '@/components/ui/button';
 import { useUserStore } from '@/hooks/use-user-store.tsx';
 import { usePatientStore } from '@/hooks/use-patient-store.tsx';
+import type { Vitals } from '@/components/vitals-monitor';
 
 export default function Home() {
   const { currentUser, isInitialized: userIsInitialized, allUsers } = useUserStore();
   const { activePatient, isInitialized: patientIsInitialized } = usePatientStore();
   const router = useRouter();
+  const [currentVitals, setCurrentVitals] = useState<Vitals | null>(null);
+
 
   const isLoading = !userIsInitialized || !patientIsInitialized;
 
@@ -60,16 +63,20 @@ export default function Home() {
     }
 
     if (activePatient && currentUser.role === 'doctor') {
+      const vitalsString = currentVitals 
+        ? `Heart Rate: ${currentVitals.hr.toFixed(0)} bpm, BP: ${currentVitals.bp.toFixed(0)} mmHg, SpO2: ${currentVitals.spo2.toFixed(0)}%, Resp: ${currentVitals.resp.toFixed(0)}/min`
+        : 'Vitals stabilizing...';
+
       return (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 h-full">
           <div className="xl:col-span-3">
             <PatientInfoCard patient={activePatient} doctor={currentUser} />
           </div>
           <div className="xl:col-span-2">
-            <VitalsMonitor patient={activePatient}/>
+            <VitalsMonitor patient={activePatient} onVitalsChange={setCurrentVitals} />
           </div>
           <div className="xl:col-span-1">
-            <InteractiveQA patientHistory={activePatient.history} currentVitals="Heart Rate: 95 bpm, Blood Pressure: 140/90 mmHg, SpO2: 94%, Respiration Rate: 22/min" />
+            <InteractiveQA patientHistory={activePatient.history} currentVitals={vitalsString} />
           </div>
         </div>
       );
