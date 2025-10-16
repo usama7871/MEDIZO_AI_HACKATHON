@@ -1,0 +1,28 @@
+mutation CreatePatientCase($creatorId: UUID!, $patientIdentifier: String!, $status: String!) @auth(level: USER) {
+  patientCase_insert(data: {creatorId: $creatorId, patientIdentifier: $patientIdentifier, status: $status})
+}
+
+query GetPatientCase($id: UUID!) @auth(level: USER) {
+  patientCase(id: $id) {
+    id
+    patientIdentifier
+    status
+    creator {
+      id
+      displayName
+      email
+    }
+  }
+}
+
+mutation AddSymptomEntry($patientCaseId: UUID!, $symptomName: String!, $severity: String!, $onsetDate: Date!) @auth(level: USER) {
+  symptomEntry_insert(data: {patientCaseId: $patientCaseId, symptomName: $symptomName, severity: $severity, onsetDate: $onsetDate})
+}
+
+query ListPatientCasesCreatedByUser($creatorId: UUID!) @auth(level: USER) {
+  patientCases(where: {creatorId: {eq: $creatorId}}) {
+    id
+    patientIdentifier
+    status
+  }
+}

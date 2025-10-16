@@ -47,7 +47,7 @@ export default function Home() {
 
     if (currentUser.role === 'doctor' && !activePatient) {
       return (
-        <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
+        <Card className="m-auto flex flex-col items-center justify-center p-12 text-center bg-card/80 animate-fade-in">
             <ShieldAlert className="h-12 w-12 text-accent mb-4" />
             <CardTitle className="text-2xl font-headline">
                 No Active Patient Selected
@@ -68,7 +68,7 @@ export default function Home() {
         : 'Vitals stabilizing...';
 
       return (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 h-full">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 h-full w-full animate-fade-in">
           <div className="xl:col-span-3">
             <PatientInfoCard patient={activePatient} doctor={currentUser} />
           </div>
@@ -84,7 +84,7 @@ export default function Home() {
 
     if (currentUser.role === 'patient') {
          return (
-             <Card className="w-full max-w-2xl bg-card/80">
+             <Card className="m-auto w-full max-w-2xl bg-card/80 animate-fade-in">
                  <CardHeader>
                     <CardTitle className="font-headline text-2xl">Welcome, {currentUser.name}</CardTitle>
                     <CardDescription>You can manage your medical records here. This information will be available to your doctor for simulations.</CardDescription>
@@ -110,7 +110,7 @@ export default function Home() {
       const doctorCount = allUsers.filter(u => u.role === 'doctor').length;
       const patientCount = allUsers.filter(u => u.role === 'patient').length;
        return (
-        <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
+        <Card className="m-auto flex flex-col items-center justify-center p-12 text-center bg-card/80 animate-fade-in">
             <CardTitle className="text-2xl font-headline">
                 Welcome, Administrator
             </CardTitle>
@@ -133,7 +133,7 @@ export default function Home() {
 
     // Fallback for any other unexpected roles
     return (
-        <Card className="flex flex-col items-center justify-center p-12 text-center bg-card/80">
+        <Card className="m-auto flex flex-col items-center justify-center p-12 text-center bg-card/80 animate-fade-in">
             <CardTitle className="text-2xl font-headline">
                 Welcome, {currentUser.name}
             </CardTitle>

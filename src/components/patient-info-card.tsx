@@ -20,7 +20,7 @@ export default function PatientInfoCard({ patient, doctor }: PatientInfoCardProp
 
 
   return (
-    <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20">
+    <Card className="bg-card/90 backdrop-blur-sm border-border/50">
       <CardHeader>
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>

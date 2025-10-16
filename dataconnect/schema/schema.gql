@@ -1,0 +1,61 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  userType: String!
+  specialty: String
+  organization: String
+  photoUrl: String
+}
+
+type PatientCase @table {
+  creator: User!
+  assignedTo: User
+  patientIdentifier: String!
+  createdAt: Timestamp!
+  status: String!
+  age: Int
+  gender: String
+  primaryComplaint: String
+  notes: String
+}
+
+type SymptomEntry @table {
+  patientCase: PatientCase!
+  symptomName: String!
+  onsetDate: Date!
+  severity: String!
+  createdAt: Timestamp!
+  description: String
+  duration: String
+}
+
+type LabResult @table {
+  patientCase: PatientCase!
+  testName: String!
+  resultValue: String!
+  unit: String!
+  resultDate: Date!
+  createdAt: Timestamp!
+  referenceRange: String
+  notes: String
+}
+
+type AIDiagnosis @table {
+  patientCase: PatientCase!
+  suggestionName: String!
+  confidenceScore: Float!
+  createdAt: Timestamp!
+  supportingEvidence: String
+  relevantLiterature: String
+  userFeedback: String
+}
+
+type Collaboration @table {
+  patientCase: PatientCase!
+  collaborator: User!
+  message: String!
+  createdAt: Timestamp!
+  attachmentUrl: String
+  recipientUser: User
+}

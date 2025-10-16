@@ -100,7 +100,7 @@ const VitalChart = ({ title, unit, data, color, Icon, yDomain }: { title: string
     const currentValue = data.length > 0 ? data[data.length - 1] : 0;
     
     return (
-        <Card className="flex flex-col bg-muted/30 border-border/30 overflow-hidden">
+        <Card className="flex flex-col bg-muted/40 border-border/30 overflow-hidden">
             <CardHeader className="flex-row items-center justify-between pb-2">
                 <div className='flex items-center gap-2'>
                     <Icon className="h-6 w-6" style={{ color }} />
@@ -165,7 +165,7 @@ export default function VitalsMonitor({ patient, onVitalsChange }: VitalsMonitor
 
 
   return (
-    <Card className="bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20 h-full">
+    <Card className="bg-card/90 backdrop-blur-sm border-border/50 h-full">
       <CardHeader>
         <CardTitle>Vitals Monitor</CardTitle>
         <CardDescription>Real-time physiological data for {patient.name}.</CardDescription>

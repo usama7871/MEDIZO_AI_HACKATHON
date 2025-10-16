@@ -1,0 +1,65 @@
+/**
+ * @description This ruleset enforces a strict user-ownership model for patient data. Each patient's data is secured under their respective document.
+ * @dataStructure Patients are stored in the `/patients/{patientId}` collection. Each patient has a subcollection `/patients/{patientId}/timeline/{eventId}` storing timeline events.
+ * @keySecurityDecisions Only authenticated users can access patient data. Each patient can only access their own timeline data. No listing of all patients is allowed.
+ * @denormalizationForAuthorization The `patientId` is used in both the patient document path and the timeline event path to ensure data consistency and enforce ownership.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to patient documents. Only authenticated users can read and write patient data, with patient-specific data accessible only by the patient.
+     * @path /patients/{patientId}
+     * @allow (create) - A user with UID 'user123' can create a patient document if request.auth.uid == 'user123'.
+     * @allow (get) - A user with UID 'user123' can read a patient document if request.auth.uid == 'user123'.
+     * @allow (update) - A user with UID 'user123' can update a patient document if request.auth.uid == 'user123'.
+     * @allow (delete) - A user with UID 'user123' can delete a patient document if request.auth.uid == 'user123'.
+     * @deny (create) - A user with UID 'user123' cannot create a patient document if request.auth.uid != 'user123'.
+     * @deny (get) - A user with UID 'user123' cannot read a patient document if request.auth.uid != 'user123'.
+     * @deny (update) - A user with UID 'user123' cannot update a patient document if request.auth.uid != 'user123'.
+     * @deny (delete) - A user with UID 'user123' cannot delete a patient document if request.auth.uid != 'user123'.
+     * @principle Enforces document ownership for writes. Restricts access to a user's own data.
+     */
+    match /patients/{patientId} {
+      allow get: if isSignedIn() && isOwner(patientId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(patientId) && request.resource.data.id == patientId;
+      allow update: if isSignedIn() && isExistingOwner(patientId) && request.resource.data.id == resource.data.id;
+      allow delete: if isSignedIn() && isExistingOwner(patientId);
+    }
+
+    /**
+     * @description Controls access to timeline events for a specific patient. Only the authenticated patient can read and write their own timeline events.
+     * @path /patients/{patientId}/timeline/{eventId}
+     * @allow (create) - A user with UID 'user123' can create a timeline event under patient 'user123' if request.auth.uid == 'user123'.
+     * @allow (get) - A user with UID 'user123' can read a timeline event under patient 'user123' if request.auth.uid == 'user123'.
+     * @allow (update) - A user with UID 'user123' can update a timeline event under patient 'user123' if request.auth.uid == 'user123'.
+     * @allow (delete) - A user with UID 'user123' can delete a timeline event under patient 'user123' if request.auth.uid == 'user123'.
+     * @deny (create) - A user with UID 'user123' cannot create a timeline event under patient 'user456'.
+     * @deny (get) - A user with UID 'user123' cannot read a timeline event under patient 'user456'.
+     * @deny (update) - A user with UID 'user123' cannot update a timeline event under patient 'user456'.
+     * @deny (delete) - A user with UID 'user123' cannot delete a timeline event under patient 'user456'.
+     * @principle Enforces document ownership for writes. Restricts access to a user's own data. Validates relational integrity.
+     */
+    match /patients/{patientId}/timeline/{eventId} {
+      allow get: if isSignedIn() && isOwner(patientId);
+      allow list: if isSignedIn() && isOwner(patientId);
+      allow create: if isSignedIn() && isOwner(patientId) && request.resource.data.patientId == patientId;
+      allow update: if isSignedIn() && isExistingOwner(patientId) && request.resource.data.patientId == resource.data.patientId;
+      allow delete: if isSignedIn() && isExistingOwner(patientId);
+    }
+  }
+
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isOwner(userId) && resource != null;
+  }
+}

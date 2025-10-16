@@ -44,15 +44,15 @@ export default function UserSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="w-full justify-between group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
+          className="w-full justify-between h-auto py-2 px-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:size-12 group-data-[collapsible=icon]:p-0"
         >
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-9 w-9">
               <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
               <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="text-left group-data-[collapsible=icon]:hidden">
-              <p className="font-medium text-sm">{currentUser.name}</p>
+              <p className="font-medium text-sm truncate">{currentUser.name}</p>
               <p className="text-xs text-muted-foreground capitalize">{currentUser.role === 'doctor' ? currentUser.specialty : currentUser.role}</p>
             </div>
           </div>

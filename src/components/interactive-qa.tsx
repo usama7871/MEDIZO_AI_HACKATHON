@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { handleAnalyzeQuestion } from '@/app/actions';
 import { Loader2, User, Bot, Send } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -26,10 +27,11 @@ export default function InteractiveQA({ patientHistory, currentVitals }: Interac
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+    if (viewportRef.current) {
+        viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -60,28 +62,46 @@ export default function InteractiveQA({ patientHistory, currentVitals }: Interac
   };
 
   return (
-    <Card className="h-full flex flex-col bg-card/80 backdrop-blur-sm border-border/50 shadow-lg shadow-black/20">
+    <Card className="h-full flex flex-col bg-card/90 backdrop-blur-sm border-border/50">
       <CardHeader>
         <CardTitle>Interactive Q&A</CardTitle>
         <CardDescription>Ask questions about the patient.</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full max-h-[400px] pr-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
+        <ScrollArea className="h-full" viewportRef={viewportRef}>
+          <div className="space-y-4 pr-4">
             {messages.map((message, index) => (
               <div key={index} className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
                 {message.role === 'assistant' && (
-                  <Avatar className="w-8 h-8 border-2 border-primary">
-                    <AvatarFallback className="bg-primary/20 text-primary"><Bot size={20} /></AvatarFallback>
-                  </Avatar>
+                  <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Avatar className="w-8 h-8 border-2 border-primary">
+                                <AvatarFallback className="bg-primary/20 text-primary"><Bot size={20} /></AvatarFallback>
+                            </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p>AI Assistant</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
                 )}
-                <div className={`rounded-lg px-3 py-2 max-w-xs shadow-md ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                  <p className="text-sm">{message.content}</p>
+                <div className={`rounded-lg px-3 py-2 max-w-[85%] shadow-md ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
                 {message.role === 'user' && (
-                  <Avatar className="w-8 h-8 border-2 border-accent">
-                    <AvatarFallback className="bg-accent/20 text-accent"><User size={20}/></AvatarFallback>
-                  </Avatar>
+                   <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Avatar className="w-8 h-8 border-2 border-accent">
+                                <AvatarFallback className="bg-accent/20 text-accent"><User size={20}/></AvatarFallback>
+                            </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent side="left">
+                            <p>You</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
                 )}
               </div>
             ))}

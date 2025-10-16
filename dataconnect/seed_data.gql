@@ -1,0 +1,50 @@
+mutation CreateSeedData @auth(level: PUBLIC, insecureReason: "This mutation is safe to expose to the public") @transaction {
+  user_insertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      displayName: "demouser1",
+      email: "demouser1@example.com",
+      userType: "doctor",
+      createdAt: "2024-05-03T00:00:00Z"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      displayName: "demouser2",
+      email: "demouser2@example.com",
+      userType: "patient",
+      createdAt: "2024-05-03T00:00:00Z"
+    }
+  ])
+  patientCase_insertMany(data: [
+    {
+      id: "650e8400-e29b-41d4-a716-446655440000",
+      creatorId: "550e8400-e29b-41d4-a716-446655440000",
+      patientIdentifier: "patient123",
+      status: "active",
+      createdAt: "2024-05-03T00:00:00Z"
+    },
+    {
+      id: "650e8400-e29b-41d4-a716-446655440001",
+      creatorId: "550e8400-e29b-41d4-a716-446655440001",
+      patientIdentifier: "patient456",
+      status: "inactive",
+      createdAt: "2024-05-03T00:00:00Z"
+    }
+  ])
+  symptomEntry_insertMany(data: [
+    {
+      patientCaseId: "650e8400-e29b-41d4-a716-446655440000",
+      symptomName: "Fever",
+      severity: "high",
+      onsetDate: "2024-05-01",
+      createdAt: "2024-05-03T00:00:00Z"
+    },
+    {
+      patientCaseId: "650e8400-e29b-41d4-a716-446655440001",
+      symptomName: "Cough",
+      severity: "moderate",
+      onsetDate: "2024-05-02",
+      createdAt: "2024-05-03T00:00:00Z"
+    }
+  ])
+}

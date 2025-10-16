@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { MedizoAiLogo } from '@/components/icons';
 import { Loader2 } from 'lucide-react';
-import { useUserStore } from '@/hooks/use-user-store.tsx';
+import { useUserStore } from '@/hooks/use-user-store';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
