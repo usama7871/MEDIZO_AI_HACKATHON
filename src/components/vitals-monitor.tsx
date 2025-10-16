@@ -181,4 +181,3 @@ export default function VitalsMonitor({ patient, onVitalsChange }: VitalsMonitor
     </Card>
   );
 }
-
